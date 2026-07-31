@@ -83,6 +83,38 @@ exists in the page; it is not a data-security or encryption control.
   navigation, which would expose data mid-presentation. No page data is collected
   or transmitted; the host access is used solely to inject a local CSS overlay."
 
+### Remote code (dashboard question)
+
+Answer: **"No, I am not using remote code."**
+
+If a reviewer asks anyway, or the listing is flagged Blue Argon, paste this:
+
+```
+This extension executes no remote code. All logic ships inside the package.
+
+- No script is fetched, injected or evaluated at runtime. The extension makes
+  no network requests of any kind: there is no fetch, XMLHttpRequest,
+  WebSocket, sendBeacon or navigator.sendBeacon call anywhere in the source.
+- No dynamic code evaluation: no eval(), no new Function(), no string-argument
+  setTimeout/setInterval, no import(), no importScripts(), no WebAssembly
+  instantiation, and no Blob/createObjectURL script construction.
+- No <script> element is ever created and no element's src is assigned.
+- The two redaction typefaces (Redacted and Redacted Script, SIL Open Font
+  License) are embedded directly in content_isolated.js as Base64
+  data:application/font-woff2 URIs. They are font data, not executable code,
+  and they are read from the package, never downloaded.
+- The extension declares no externally_connectable, no sandbox, and no custom
+  content_security_policy. It runs only in the extension's ISOLATED world and
+  does not inject into the page's MAIN world.
+
+The only thing written to the page is a <style> element built from a string
+constant in the package.
+```
+
+Note the distinction if it comes up: an embedded Base64 **font** is not remote
+code, and it is not remotely hosted either. The `data:` URI is the reason there
+is no font download, which is what keeps the network-request count at zero.
+
 ## 4. Pre-submission checklist (CWS rejection codes)
 
 - [ ] **Blue Argon (remote code):** none — fonts are Base64, no `eval`/remote imports.
