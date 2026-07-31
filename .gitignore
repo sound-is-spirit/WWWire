@@ -1,0 +1,20 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Build artifacts / packaging
+*.zip
+*.crx
+*.pem
+dist/
+build/
+
+# Node (only if a build step is ever added)
+node_modules/
+npm-debug.log*
+
+# Local Claude Code scratch/config (not part of the extension)
+.claude/

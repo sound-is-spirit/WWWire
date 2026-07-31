@@ -1,0 +1,105 @@
+# Chrome Web Store submission guide
+
+Everything you need to paste into the CWS Developer Dashboard.
+
+## 1. Package the extension
+
+The store wants a ZIP of the extension **contents** (manifest at the root).
+
+```bash
+cd Page-GreyOut
+zip -r ../page-greyout-2.1.0.zip . \
+  -x ".git/*" ".github/*" ".claude/*" "docs/*" \
+     "*.md" ".gitignore" "*.zip"
+```
+
+Ship only what the extension needs: `manifest.json`, `background.js`,
+`content_isolated.js`, `schema.json`, `icons/`. (Docs/licence can stay in the
+GitHub repo; they don't need to be in the CRX.)
+
+## 2. Store listing fields
+
+- **Name:** Page GreyOut
+- **Summary (132 char max):**
+  `Masks all on-screen text with grey blocks for safe screen sharing, demos and screenshots. Works on any page.`
+- **Category:** Productivity
+- **Screenshots:** 1280×800 PNG (before/after of a page being redacted). At least
+  one is required.
+- **Description:** see below.
+
+### Long description
+
+```
+Page GreyOut instantly redacts every piece of on-screen text into clean grey
+blocks — perfect for screen sharing, live demos, documentation and screenshots
+where you don't want names, numbers, emails or other data on display.
+
+Click the toolbar icon (or press Ctrl/Cmd+Shift+Y) to turn it on; click again to
+reveal. It works on any website, including single-page apps and content inside
+web-component (Shadow DOM) controls.
+
+How it's different:
+• Universal — a single rendering rule greys ALL text, so nothing is missed.
+• No layout shift — text keeps its exact size and wrapping.
+• Private by design — zero network requests, zero data collection, no remote code.
+
+Note: this is a visual privacy tool for screen sharing. The underlying text still
+exists in the page; it is not a data-security or encryption control.
+```
+
+## 3. Privacy tab (required)
+
+- **Data collection:** "This item does not collect or use your data." (True — the
+  only stored value is the local on/off toggle.)
+- **Single purpose:** "Visually redact on-screen text with grey blocks for privacy
+  during screen sharing."
+- Link the hosted privacy policy (`PRIVACY.md` in the repo, or a GitHub Pages URL).
+
+### Permission justifications (paste verbatim)
+
+- **`storage`:**
+  "Stores a single boolean — whether redaction is currently on or off — so the
+  choice persists across page loads and browser restarts."
+
+- **`<all_urls>` host permission:**
+  "This extension provides continuous screen-sharing redaction. To ensure a user
+  does not accidentally navigate to a sensitive page containing personal data
+  while actively screen sharing, the redaction must apply persistently across all
+  navigations and all URLs while it is switched on. The `activeTab` permission is
+  functionally insufficient because its access is dropped on cross-origin
+  navigation, which would expose data mid-presentation. No page data is collected
+  or transmitted; the host access is used solely to inject a local CSS overlay."
+
+## 4. Pre-submission checklist (CWS rejection codes)
+
+- [ ] **Blue Argon (remote code):** none — fonts are Base64, no `eval`/remote imports.
+- [ ] **Red Magnesium (single purpose):** one function only (text redaction).
+- [ ] **Yellow Magnesium (packaging):** every file in `manifest.json` exists in the
+      ZIP with exact case (`icons/icon16.png`, etc.).
+- [ ] **Purple Potassium (excess permissions):** `<all_urls>` justified above;
+      `scripting`/`tabs`/`cookies` are NOT requested.
+- [ ] **Yellow Zinc (listing):** accurate description, no keyword stuffing, 1280×800
+      screenshots attached.
+
+## 5. Enterprise (optional) — force-install & managed policy
+
+Admins can force-install and configure via Group Policy / Intune / MDM:
+
+```json
+{
+  "ExtensionSettings": {
+    "<EXTENSION_ID>": {
+      "installation_mode": "force_installed",
+      "update_url": "https://clients2.google.com/service/update2/crx"
+    }
+  }
+}
+```
+
+Managed policy (validated against `schema.json`):
+
+```json
+{
+  "ForceEnableOnDomains": ["hr.internal.corp", "payroll.example.com"]
+}
+```
