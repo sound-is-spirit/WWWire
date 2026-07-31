@@ -10,6 +10,12 @@ It works everywhere, and is hardened for the hardest cases — single-page apps
 that constantly re-render, and text hidden inside encapsulated web-component
 **Shadow DOM** controls.
 
+## Examples
+
+| Before (Normal) | After (Redacted) |
+|:---:|:---:|
+| <img src="docs/example-normal.png" width="400"> | <img src="docs/example-redacted.png" width="400"> |
+
 ## How it works
 
 Four browser primitives, chosen to be fast and leak-free:
