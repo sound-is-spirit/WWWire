@@ -26,8 +26,16 @@ GitHub repo; they don't need to be in the CRX.)
 - **Summary (132 char max):**
   `Masks all on-screen text with grey blocks for safe screen sharing, demos and screenshots. Works on any page.`
 - **Category:** Productivity
-- **Screenshots:** 1280×800 PNG (before/after of a page being redacted). At least
-  one is required.
+- **Screenshots:** ready to upload, in `store/`:
+  1. `store/screenshot-1-before.png` — normal page
+  2. `store/screenshot-2-after.png` — same page redacted
+
+  Both are 1280×800 PNG, RGB, no alpha channel (CWS rejects transparency).
+  Generated from `docs/example-*.png` by scaling 1920×1080 → 1280×720 and
+  padding the bottom with the page background colour.
+
+  Screenshots are uploaded through the dashboard, **not** placed in the ZIP.
+  Upload them in this order; the first is the listing's hero image.
 - **Description:** see below.
 
 ### Long description
