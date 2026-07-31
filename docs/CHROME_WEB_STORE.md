@@ -8,10 +8,13 @@ The store wants a ZIP of the extension **contents** (manifest at the root).
 
 ```bash
 cd Page-GreyOut
-zip -r ../page-greyout-2.1.0.zip . \
-  -x ".git/*" ".github/*" ".claude/*" "docs/*" \
-     "*.md" ".gitignore" "*.zip"
+zip -r page-greyout-2.1.0.zip \
+  manifest.json background.js content_isolated.js schema.json icons \
+  -x "*.DS_Store"
 ```
+
+An allowlist is safer than an exclude list: nothing new can leak into the
+package later just because it wasn't in the `-x` list.
 
 Ship only what the extension needs: `manifest.json`, `background.js`,
 `content_isolated.js`, `schema.json`, `icons/`. (Docs/licence can stay in the
@@ -53,7 +56,9 @@ exists in the page; it is not a data-security or encryption control.
   only stored value is the local on/off toggle.)
 - **Single purpose:** "Visually redact on-screen text with grey blocks for privacy
   during screen sharing."
-- Link the hosted privacy policy (`PRIVACY.md` in the repo, or a GitHub Pages URL).
+- **Privacy policy URL:**
+  `https://github.com/sound-is-spirit/Page-GreyOut/blob/main/PRIVACY.md`
+  (CWS accepts a public GitHub URL; it just has to resolve without a login.)
 
 ### Permission justifications (paste verbatim)
 
@@ -75,7 +80,7 @@ exists in the page; it is not a data-security or encryption control.
 - [ ] **Blue Argon (remote code):** none — fonts are Base64, no `eval`/remote imports.
 - [ ] **Red Magnesium (single purpose):** one function only (text redaction).
 - [ ] **Yellow Magnesium (packaging):** every file in `manifest.json` exists in the
-      ZIP with exact case (`icons/icon16.png`, etc.).
+      ZIP with exact case (`icons/bar16.png`, `bar32`, `bar48`, `bar128`).
 - [ ] **Purple Potassium (excess permissions):** `<all_urls>` justified above;
       `scripting`/`tabs`/`cookies` are NOT requested.
 - [ ] **Yellow Zinc (listing):** accurate description, no keyword stuffing, 1280×800
