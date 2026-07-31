@@ -1,6 +1,6 @@
 # Privacy Policy — Page GreyOut
 
-_Last updated: 2026_
+_Last updated: 31 July 2026_
 
 Page GreyOut does **not** collect, store, transmit, or sell any personal or
 browsing data.
@@ -30,5 +30,5 @@ browsing data.
 
 ## Contact
 
-For privacy questions, open a GitHub issue or contact the maintainer listed on
-the repository.
+For privacy questions, open an issue at
+https://github.com/sound-is-spirit/Page-GreyOut/issues.
