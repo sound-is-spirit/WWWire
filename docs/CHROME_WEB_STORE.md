@@ -85,26 +85,3 @@ exists in the page; it is not a data-security or encryption control.
       `scripting`/`tabs`/`cookies` are NOT requested.
 - [ ] **Yellow Zinc (listing):** accurate description, no keyword stuffing, 1280×800
       screenshots attached.
-
-## 5. Enterprise (optional) — force-install & managed policy
-
-Admins can force-install and configure via Group Policy / Intune / MDM:
-
-```json
-{
-  "ExtensionSettings": {
-    "<EXTENSION_ID>": {
-      "installation_mode": "force_installed",
-      "update_url": "https://clients2.google.com/service/update2/crx"
-    }
-  }
-}
-```
-
-Managed policy (validated against `schema.json`):
-
-```json
-{
-  "ForceEnableOnDomains": ["hr.internal.corp", "payroll.example.com"]
-}
-```

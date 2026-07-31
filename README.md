@@ -53,17 +53,6 @@ Each frame reads its own state from `chrome.storage.local` and reacts to
 `storage.onChanged` — there is no cross-frame `postMessage` and no cross-world
 messaging to intercept.
 
-## Enterprise deployment
-
-Admins can push a read-only managed policy (Group Policy / Intune / MDM) validated
-against `schema.json`:
-
-- **`ForceEnableOnDomains`** — array of hostnames where redaction is forced ON and
-  the user cannot turn it off (subdomains included).
-
-Combined with the `ExtensionSettings` policy (`force_installed`), IT can silently
-deploy and enforce redaction on sensitive internal domains.
-
 ## Privacy & data handling
 
 - **No data collection.** The extension stores exactly one value —
