@@ -7,9 +7,9 @@ Everything you need to paste into the CWS Developer Dashboard.
 The store wants a ZIP of the extension **contents** (manifest at the root).
 
 ```bash
-cd Page-GreyOut
-zip -r page-greyout-2.1.0.zip \
-  manifest.json background.js content_isolated.js schema.json icons \
+cd GreyOut
+zip -r greyout-2.2.0.zip \
+  manifest.json background.js content_isolated.js icons \
   -x "*.DS_Store"
 ```
 
@@ -17,12 +17,12 @@ An allowlist is safer than an exclude list: nothing new can leak into the
 package later just because it wasn't in the `-x` list.
 
 Ship only what the extension needs: `manifest.json`, `background.js`,
-`content_isolated.js`, `schema.json`, `icons/`. (Docs/licence can stay in the
-GitHub repo; they don't need to be in the CRX.)
+`content_isolated.js`, `icons/`. (Docs/licence can stay in the GitHub repo;
+they don't need to be in the CRX.)
 
 ## 2. Store listing fields
 
-- **Name:** Page GreyOut
+- **Name:** GreyOut
 - **Summary (132 char max):**
   `Masks all on-screen text with grey blocks for safe screen sharing, demos and screenshots. Works on any page.`
 - **Category:** Productivity
@@ -41,7 +41,7 @@ GitHub repo; they don't need to be in the CRX.)
 ### Long description
 
 ```
-Page GreyOut instantly redacts every piece of on-screen text into clean grey
+GreyOut instantly redacts every piece of on-screen text into clean grey
 blocks — perfect for screen sharing, live demos, documentation and screenshots
 where you don't want names, numbers, emails or other data on display.
 
@@ -65,7 +65,7 @@ exists in the page; it is not a data-security or encryption control.
 - **Single purpose:** "Visually redact on-screen text with grey blocks for privacy
   during screen sharing."
 - **Privacy policy URL:**
-  `https://github.com/sound-is-spirit/Page-GreyOut/blob/main/PRIVACY.md`
+  `https://github.com/sound-is-spirit/GreyOut/blob/main/PRIVACY.md`
   (CWS accepts a public GitHub URL; it just has to resolve without a login.)
 
 ### Permission justifications (paste verbatim)

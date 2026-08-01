@@ -1,4 +1,4 @@
-// Page GreyOut — ISOLATED world content script.
+// GreyOut — ISOLATED world content script.
 //
 // This is the whole extension's engine — it runs at document_start in every
 // frame (all_frames + match_about_blank), entirely within the ISOLATED world.
@@ -11,9 +11,8 @@
 //   2. Applies it to the light DOM via an injected <style> (plus
 //      adoptedStyleSheets), and to open/closed Shadow DOM via the privileged
 //      chrome.dom.openOrClosedShadowRoot() API — no attachShadow monkey-patch.
-//   3. Reads the user toggle (chrome.storage.local) and an optional read-only
-//      enterprise policy (chrome.storage.managed) to decide the effective state.
-//      A lightweight observer (active only while masking) keeps the style
+//   3. Reads the user toggle (chrome.storage.local) to decide the state. A
+//      lightweight observer (active only while masking) keeps the style
 //      attached and catches shadow roots inside newly added nodes.
 
 (function () {
@@ -129,10 +128,10 @@ ${ICON_KEEP} {
   let styleEl = null;
   function ensureStyleEl() {
     if (styleEl && styleEl.isConnected) return styleEl;
-    styleEl = document.getElementById("page-greyout-style");
+    styleEl = document.getElementById("greyout-style");
     if (!styleEl) {
       styleEl = document.createElement("style");
-      styleEl.id = "page-greyout-style";
+      styleEl.id = "greyout-style";
       styleEl.textContent = CSS_TEXT;
     }
     return styleEl;
@@ -180,9 +179,9 @@ ${ICON_KEEP} {
 
   function styleOneShadow(root) {
     try {
-      if (root && !root.querySelector("style[data-page-greyout]")) {
+      if (root && !root.querySelector("style[data-greyout]")) {
         const s = document.createElement("style");
-        s.setAttribute("data-page-greyout", "1");
+        s.setAttribute("data-greyout", "1");
         s.textContent = CSS_TEXT;
         root.appendChild(s);
       }
@@ -193,7 +192,7 @@ ${ICON_KEEP} {
 
   function unstyleOneShadow(root) {
     try {
-      const s = root && root.querySelector("style[data-page-greyout]");
+      const s = root && root.querySelector("style[data-greyout]");
       if (s && s.parentNode) s.parentNode.removeChild(s);
     } catch (e) {
       /* ignore */
@@ -250,7 +249,7 @@ ${ICON_KEEP} {
     else removeFromDocument();
     try {
       console.info(
-        "[Page GreyOut] " +
+        "[GreyOut] " +
           (enabled ? "ON" : "OFF") +
           (window.top === window ? " (top frame)" : " (frame)")
       );
@@ -304,76 +303,21 @@ ${ICON_KEEP} {
     }
   }
 
-  // --- State sources: user toggle (storage.local) + enterprise policy -------
-  // Enterprise admins may push a read-only managed policy (see schema.json):
-  //   ForceEnableOnDomains: string[]  — hosts where redaction is forced ON.
-  // Effective state = (policy forces this host) OR (user's local toggle).
+  // --- State source: the user's toggle in storage.local ---------------------
   const hasStorage =
     typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
-  const hasManaged =
-    typeof chrome !== "undefined" && chrome.storage && chrome.storage.managed;
-
-  let localEnabled = false;
-  let forceDomains = [];
-
-  function hostForced() {
-    let host = "";
-    try {
-      host = (location.hostname || "").toLowerCase();
-    } catch (e) {
-      return false;
-    }
-    return forceDomains.some(function (d) {
-      d = String(d || "")
-        .toLowerCase()
-        .replace(/^\*?\.?/, ""); // tolerate "*.example.com" / ".example.com"
-      return d && (host === d || host.endsWith("." + d));
-    });
-  }
-
-  function applyEffective() {
-    setState(hostForced() || localEnabled);
-  }
-
-  function readLocalThenApply() {
-    if (hasStorage) {
-      chrome.storage.local.get({ enabled: false }, function (res) {
-        localEnabled = !!(res && res.enabled === true);
-        applyEffective();
-      });
-    } else {
-      applyEffective();
-    }
-  }
-
-  if (hasManaged) {
-    try {
-      chrome.storage.managed.get(null, function (pol) {
-        try {
-          if (pol && Array.isArray(pol.ForceEnableOnDomains)) {
-            forceDomains = pol.ForceEnableOnDomains;
-          }
-        } catch (e) {
-          /* ignore */
-        }
-        readLocalThenApply();
-      });
-    } catch (e) {
-      readLocalThenApply();
-    }
-  } else {
-    readLocalThenApply();
-  }
 
   if (hasStorage) {
+    chrome.storage.local.get({ enabled: false }, function (res) {
+      setState(!!(res && res.enabled === true));
+    });
+
     chrome.storage.onChanged.addListener(function (changes, area) {
       if (area === "local" && changes.enabled) {
-        localEnabled = changes.enabled.newValue === true;
-        applyEffective();
-      } else if (area === "managed" && changes.ForceEnableOnDomains) {
-        forceDomains = changes.ForceEnableOnDomains.newValue || [];
-        applyEffective();
+        setState(changes.enabled.newValue === true);
       }
     });
+  } else {
+    setState(false);
   }
 })();

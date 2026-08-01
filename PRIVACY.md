@@ -1,8 +1,8 @@
-# Privacy Policy — Page GreyOut
+# Privacy Policy — GreyOut
 
 _Last updated: 31 July 2026_
 
-Page GreyOut does **not** collect, store, transmit, or sell any personal or
+GreyOut does **not** collect, store, transmit, or sell any personal or
 browsing data.
 
 ## What data the extension handles
@@ -10,10 +10,7 @@ browsing data.
 - **Toggle state only.** A single value — whether redaction is on or off — is
   stored locally on your device via `chrome.storage.local`. It never leaves your
   machine.
-- **Optional enterprise policy.** If your organization deploys a managed policy
-  (`chrome.storage.managed`), the extension reads it locally to decide whether
-  redaction is forced on for certain domains. This is read-only and set by your
-  administrator; the extension does not send it anywhere.
+That single value is the only thing the extension stores, anywhere.
 
 ## What the extension does NOT do
 
@@ -31,4 +28,4 @@ browsing data.
 ## Contact
 
 For privacy questions, open an issue at
-https://github.com/sound-is-spirit/Page-GreyOut/issues.
+https://github.com/sound-is-spirit/GreyOut/issues.

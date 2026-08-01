@@ -1,6 +1,17 @@
 # Changelog
 
-All notable changes to Page GreyOut are documented here.
+All notable changes to GreyOut are documented here.
+
+## [2.2.0] — Renamed, enterprise policy removed
+
+### Changed
+- Renamed from **Page GreyOut** to **GreyOut**.
+
+### Removed
+- **Enterprise managed policy.** `chrome.storage.managed`, `schema.json` and the
+  `ForceEnableOnDomains` handling are gone. The on/off state now comes solely
+  from the user's own toggle, and the extension no longer reads
+  `location.hostname`.
 
 ## [2.1.0] — Security hardening
 
@@ -15,8 +26,6 @@ All notable changes to Page GreyOut are documented here.
   `chrome.storage`, so there is no wildcard message channel to intercept.
 
 ### Added
-- **Enterprise managed policy** (`chrome.storage.managed` + `schema.json`):
-  `ForceEnableOnDomains` forces redaction ON for listed domains.
 - Repository governance: `LICENSE` (MIT), `SECURITY.md`, `PRIVACY.md`.
 
 ## [2.0.0] — Universal engine

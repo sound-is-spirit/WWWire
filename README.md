@@ -1,4 +1,4 @@
-# Page GreyOut
+# GreyOut
 
 A Manifest V3 Chrome extension that masks **all visible text on any web page**
 with clean grey "wireframe" blocks — safe for screen sharing, demos,
@@ -49,10 +49,7 @@ content_isolated.js    The whole engine. ISOLATED world only, all_frames +
                        - Light DOM: injects it as <style> (+ adoptedStyleSheets).
                        - Shadow DOM: chrome.dom.openOrClosedShadowRoot() + a
                          <style> per shadow root.
-                       - Reads user toggle (storage.local) and optional
-                         enterprise policy (storage.managed).
-
-schema.json            Managed-policy schema for enterprise deployment.
+                       - Reads the user toggle (storage.local).
 ```
 
 Each frame reads its own state from `chrome.storage.local` and reacts to

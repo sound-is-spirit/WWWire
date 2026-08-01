@@ -1,4 +1,4 @@
-// Page GreyOut — background service worker (Manifest V3)
+// GreyOut — background service worker (Manifest V3)
 //
 // Responsibilities:
 //   1. Persist the default toggle state in chrome.storage.local.
@@ -68,8 +68,8 @@ async function refreshIcon(enabled) {
   try {
     await chrome.action.setTitle({
       title: enabled
-        ? "Page GreyOut — ON (click to disable)"
-        : "Page GreyOut — OFF (click to enable)"
+        ? "GreyOut — ON (click to disable)"
+        : "GreyOut — OFF (click to enable)"
     });
   } catch (e) {
     /* ignore */

@@ -16,7 +16,7 @@ period for a fix before any public disclosure.
 
 ## Security model — what this extension is (and is not)
 
-Page GreyOut is a **visual privacy shield** for screen sharing. It re-renders
+GreyOut is a **visual privacy shield** for screen sharing. It re-renders
 on-screen text as grey blocks via CSS. It is **not** a data-security control:
 
 - The real text still exists in the DOM and page memory. It can be recovered via

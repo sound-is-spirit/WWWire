@@ -1,18 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Page GreyOut",
-  "version": "2.1.0",
+  "name": "GreyOut",
+  "version": "2.2.0",
   "description": "Masks all on-screen text with grey blocks for safe screen sharing, demos and screenshots. Works on any page.",
   "permissions": ["storage"],
   "host_permissions": ["<all_urls>"],
-  "storage": {
-    "managed_schema": "schema.json"
-  },
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Page GreyOut",
+    "default_title": "GreyOut",
     "default_icon": {
       "16": "icons/bar16.png",
       "32": "icons/bar32.png",
