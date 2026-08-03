@@ -6,6 +6,38 @@ WireDrafter is a new product built on the engine of
 [GreyOut](https://github.com/sound-is-spirit/GreyOut). Versioning restarts at
 `0.1.0`; the GreyOut history (up to 2.2.0) lives in that repository.
 
+## [0.2.0] Permission and state rework
+
+Roadmap item 5. The extension no longer runs everywhere by default.
+
+### Changed
+- **Dropped `<all_urls>` host permission.** Permissions are now `storage`,
+  `activeTab` and `scripting`. The install prompt no longer asks to read and
+  change data on all websites.
+- **The content script is no longer declared in the manifest.** It is injected
+  on demand with `chrome.scripting.executeScript` (allFrames) into the one tab
+  the user invoked the extension on. Nothing runs until asked.
+- **State is per tab**, held by the service worker in `chrome.storage.session`
+  keyed by tab id. Toggling a tab no longer flips every other tab and iframe.
+  The old browser-wide `storage.local.enabled` key is deleted on update.
+- **The content script holds no state of its own.** It starts inert and applies
+  whatever the worker's last `wiredrafter:setState` message said, instead of
+  reading storage and subscribing to `storage.onChanged`.
+- **Injection is idempotent.** A re-injection guard means the worker can inject
+  unconditionally on every toggle without tracking live frames.
+- **The toolbar icon is per tab**: green while that tab is drafted, plain
+  otherwise, so the icon reflects the tab rather than a global flag.
+
+### Added
+- Draft mode is cleared on navigation, reload and tab close, so the icon can no
+  longer claim a tab is drafted after its renderer has died.
+- A badge flash when Chrome forbids scripting the page (`chrome://`, the Web
+  Store, other extensions' pages) instead of failing silently.
+
+### Known limitation
+A sub-frame that navigates on its own while draft mode is on is not re-drafted
+until the next toggle.
+
 ## [0.1.0] Forked from GreyOut
 
 ### Changed

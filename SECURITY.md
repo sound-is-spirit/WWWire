@@ -34,11 +34,16 @@ data-security control.
   It does **not** inject into the page's MAIN world and does **not** patch native
   prototypes (e.g. `Element.prototype.attachShadow`). Shadow DOM is reached via
   the privileged `chrome.dom.openOrClosedShadowRoot()` API.
-- **Minimal permissions.** `storage` only, plus `<all_urls>` host access needed to
-  render any page the user points the tool at. No `scripting`, `tabs`, `cookies`,
-  or `webRequest`.
-- **No cross-frame `postMessage`.** Every frame reads its own state from
-  `chrome.storage`, so there is no message channel for a page to intercept.
+- **No standing host access.** Permissions are `storage`, `activeTab` and
+  `scripting`. There is no `<all_urls>` host permission and no declared content
+  script, so nothing runs on any site until the user invokes the extension on a
+  specific tab, which is what grants `activeTab` for that tab alone. No `tabs`,
+  `cookies` or `webRequest`.
+- **No persisted state.** Per-tab flags live in `chrome.storage.session`, in
+  memory, cleared when the browser closes and when a tab navigates or closes.
+- **No cross-frame `postMessage`.** State reaches frames as a single
+  `chrome.runtime` message from the service worker, so there is no page-visible
+  message channel to intercept and no shared storage key another tab can read.
 
 ## Scope
 

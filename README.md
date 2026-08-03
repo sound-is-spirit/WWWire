@@ -43,11 +43,8 @@ in the notes referenced below.
    translate3d` for movement, and an undo stack (`{node, parent, nextSibling}`
    plus Cmd+Z).
 4. **Export.** PNG and SVG out of the overlay canvas.
-5. **Permission and state rework.** Move from `<all_urls>` at `document_start`
-   to `activeTab` + `scripting`, and from browser-wide `storage.local` to
-   per-tab `storage.session`. Highest-value change on the list: it drops the
-   broad install warning and fixes the "toggling affects every tab" problem in
-   one move.
+5. ~~**Permission and state rework.**~~ **Done in v0.2.0.** See
+   [Permission model](#permission-model).
 
 ## How the current engine works
 
@@ -58,46 +55,76 @@ in the notes referenced below.
 | **`<style>` injection + Constructable Stylesheet** | The light DOM gets a reliable injected `<style>`; the same rules are also adopted into `document.adoptedStyleSheets`. Applying and removing is an O(1) CSSOM operation. |
 | **`chrome.dom.openOrClosedShadowRoot()`** | Reaches text inside encapsulated **Shadow DOM** controls (even `mode:"closed"`) from the **ISOLATED world**, with no host-page code injection and no prototype patching. A `<style>` is injected into each shadow root. |
 
+## Permission model
+
+WireDrafter requests `storage`, `activeTab` and `scripting`. It does **not**
+request `<all_urls>`, and the content script is not declared in the manifest.
+
+Nothing runs anywhere until you invoke the extension on a tab. Clicking the
+toolbar icon (or pressing the shortcut) grants `activeTab` for that one tab, and
+only then is the renderer injected, into that tab's frames only. Consequences,
+all deliberate:
+
+- The install prompt does not ask to "read and change all your data on all
+  websites".
+- **State is per tab.** Drafting one tab leaves every other tab alone. Earlier
+  versions kept a single browser-wide flag, which was wrong for this tool.
+- **Draft mode does not survive a navigation or reload.** The injected renderer
+  dies with the document, so the tab's state is cleared to match rather than
+  showing a stale ON icon.
+- State lives in `chrome.storage.session` (in-memory, gone when Chrome closes),
+  not `chrome.storage.local`. Persisting "draft mode is on" across a restart
+  would relaunch you into a state whose renderer no longer exists.
+
 ## Usage
 
-- The toolbar icon is a **direct toggle** (no popup yet): click to turn ON,
-  click again to turn OFF. The icon shows **ON** (green) / **OFF** (grey).
+- The toolbar icon is a **direct toggle** (no popup yet): click to draft the
+  current tab, click again to restore it. The icon turns green while a tab is
+  drafted; tabs you have not touched keep the plain icon.
 - Same toggle is bound to **Ctrl/Cmd+Shift+Y**.
-- **Default is OFF.** Because it currently runs on every site, it stays off
-  until you turn it on. The setting is global (applies to all tabs) and persists
-  until you toggle it back. Both of those change in roadmap item 5.
+- The popup arrives with roadmap items 1 and 3, when there is more than one mode
+  worth switching.
 
 ## Architecture
 
-```
-background.js          Service worker. Persists {enabled} in storage,
-                       handles the icon click, keyboard command, and the
-                       ON/OFF icon. Touches no host-page code.
+The worker owns all state; the content script is a renderer that does what it is
+told.
 
-content_isolated.js    The whole engine. ISOLATED world only, all_frames +
-                       about:blank, run_at document_start.
+```
+background.js          Service worker. Owns per-tab state in
+                       chrome.storage.session, injects the renderer on
+                       demand (chrome.scripting, allFrames), pushes state
+                       to it, drives the per-tab icon, and clears a tab on
+                       navigation or close. Touches no host-page code.
+
+content_isolated.js    The renderer. ISOLATED world only, injected on
+                       demand rather than declared in the manifest.
+                       - Guards against re-injection, so the worker can
+                         inject unconditionally on every toggle.
                        - Builds ONE stylesheet (embedded fonts + rules).
                        - Light DOM: injects it as <style> (+ adoptedStyleSheets).
                        - Shadow DOM: chrome.dom.openOrClosedShadowRoot() + a
-                         <style> per shadow root.
-                       - Reads the user toggle (storage.local).
+                         <style> per shadow root, nested roots included.
+                       - Holds no opinion about state; applies whatever the
+                         worker's last message said.
 ```
 
-Each frame reads its own state from `chrome.storage.local` and reacts to
-`storage.onChanged`. There is no cross-frame `postMessage` and no cross-world
-messaging to intercept.
+One `chrome.runtime` message carries the state, worker to frames. There is no
+cross-frame `postMessage`, no cross-world messaging to intercept, and no shared
+storage key a second tab could read.
 
 ## Privacy and data handling
 
-- **No data collection.** The extension stores exactly one value,
-  `enabled: true|false`, in `chrome.storage.local` on your own machine. Nothing
+- **No data collection.** The extension stores one boolean per drafted tab in
+  `chrome.storage.session`, in memory, discarded when Chrome closes. Nothing
   else is read, stored, or transmitted.
 - **No network requests.** No `fetch`/XHR/WebSocket/beacon. The bar font is
   embedded as a Base64 `data:` URI, so not even the font is downloaded.
 - **No remote code.** All logic ships in the package (MV3 compliant).
 - **No host-page tampering.** Runs only in the extension's ISOLATED world; it
   does not inject into the page's `MAIN` world or patch any native prototypes.
-- **Permissions:** `storage` only, plus `<all_urls>` host access.
+- **Permissions:** `storage`, `activeTab`, `scripting`. No `<all_urls>`, no
+  `tabs`, no `cookies`, no `webRequest`.
 
 ## Install (unpacked)
 
@@ -125,7 +152,15 @@ Everything is driven by `buildCss()` in `content_isolated.js`:
   into a `<canvas>` cannot be turned into bars. SVG `<text>` is covered; canvas
   text is not.
 - **Restricted pages.** Content scripts cannot run on `chrome://` pages, the
-  Chrome Web Store, or other browsers' internal pages. That is a Chrome policy.
+  Chrome Web Store, or other extensions' pages. That is a Chrome policy; the
+  toolbar icon flashes a badge instead of silently doing nothing.
+- **Navigation ends the session.** Reloading or navigating a drafted tab clears
+  it. That is inherent to on-demand injection, and correct for a tool you point
+  at a page rather than leave running.
+- **Sub-frames that navigate on their own** while draft mode is on are not
+  picked up until the next toggle. The worker injects into all frames at toggle
+  time, but a frame that reloads afterwards comes back clean. The overlay
+  renderer in roadmap item 1 removes this class of problem.
 
 ## Fonts
 

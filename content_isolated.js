@@ -5,23 +5,35 @@
 // primitive of a lo-fi wireframe; the structural layer (sketch boxes) and edit
 // mode are not implemented yet. See README "Roadmap".
 //
-// It runs at document_start in every frame (all_frames + match_about_blank),
-// entirely within the ISOLATED world. There is NO MAIN-world injection and NO
-// host-page prototype patching. It:
+// It is INJECTED ON DEMAND by the service worker (chrome.scripting.executeScript
+// with allFrames), not declared in the manifest, so it only ever runs in a tab
+// the user explicitly pointed the tool at. It lives entirely in the ISOLATED
+// world. There is NO MAIN-world injection and NO host-page prototype patching.
+// It:
 //   1. Builds a stylesheet with an embedded Base64 "Redacted" web font plus a
 //      UNIVERSAL glyph-substitution rule: every text glyph becomes a solid grey
-//      block. No background boxes are used, so masked regions never stack into
+//      bar. No background boxes are used, so barred regions never stack into
 //      darker nested boxes, and the standing `*` rule matches nodes the instant
-//      they paint — nothing can be "missed".
+//      they paint, so nothing can be "missed".
 //   2. Applies it to the light DOM via an injected <style> (plus
 //      adoptedStyleSheets), and to open/closed Shadow DOM via the privileged
-//      chrome.dom.openOrClosedShadowRoot() API — no attachShadow monkey-patch.
-//   3. Reads the user toggle (chrome.storage.local) to decide the state. A
-//      lightweight observer (active only while masking) keeps the style
+//      chrome.dom.openOrClosedShadowRoot() API, with no attachShadow patch.
+//   3. Takes its state from an explicit message sent by the service worker. A
+//      lightweight observer (active only while rendering) keeps the style
 //      attached and catches shadow roots inside newly added nodes.
+//
+// Injection is idempotent: re-running this file in a frame that already has it
+// is a no-op, so the worker can inject unconditionally on every toggle without
+// tracking which frames are already live.
 
 (function () {
   "use strict";
+
+  // Re-injection guard. Every executeScript into the same frame shares this
+  // ISOLATED-world global, so a second run bails out immediately and leaves the
+  // first instance's listener (and its state) intact.
+  if (window.__wireDrafterInstalled) return;
+  window.__wireDrafterInstalled = true;
 
   // ---------------------------------------------------------------------------
   // Embedded fonts (WOFF2, Base64, ~10 KB decoded). "Redacted" by Christian
@@ -309,21 +321,23 @@ ${ICON_KEEP} {
     }
   }
 
-  // --- State source: the user's toggle in storage.local ---------------------
-  const hasStorage =
-    typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
+  // --- State source: an explicit message from the service worker ------------
+  // State is per-tab and lives in the worker (chrome.storage.session). This
+  // frame holds no opinion of its own and starts OFF: the worker sends the
+  // desired state immediately after injecting. Nothing is read from
+  // storage.local, so a toggle in one tab cannot leak into another.
+  const MSG_SET_STATE = "wiredrafter:setState";
 
-  if (hasStorage) {
-    chrome.storage.local.get({ enabled: false }, function (res) {
-      setState(!!(res && res.enabled === true));
+  // Note the deliberate lack of sendResponse: the worker broadcasts to every
+  // frame at once, and a single sendMessage has only one response channel. If
+  // each frame answered, all but the first would race and log "message channel
+  // closed" noise. Returning falsy closes the channel cleanly in every frame.
+  try {
+    chrome.runtime.onMessage.addListener(function (msg) {
+      if (!msg || msg.type !== MSG_SET_STATE) return;
+      setState(msg.enabled === true);
     });
-
-    chrome.storage.onChanged.addListener(function (changes, area) {
-      if (area === "local" && changes.enabled) {
-        setState(changes.enabled.newValue === true);
-      }
-    });
-  } else {
-    setState(false);
+  } catch (e) {
+    /* no runtime (should not happen in a content script) */
   }
 })();

@@ -1,10 +1,9 @@
 {
   "manifest_version": 3,
   "name": "WireDrafter",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Turn any website into an editable lo-fi wireframe. Strip the styling, sketch the structure, move and delete anything.",
-  "permissions": ["storage"],
-  "host_permissions": ["<all_urls>"],
+  "permissions": ["storage", "activeTab", "scripting"],
   "background": {
     "service_worker": "background.js"
   },
@@ -23,15 +22,6 @@
     "48": "icons/bar48.png",
     "128": "icons/bar128.png"
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content_isolated.js"],
-      "run_at": "document_start",
-      "all_frames": true,
-      "match_about_blank": true
-    }
-  ],
   "commands": {
     "toggle-draft": {
       "suggested_key": {

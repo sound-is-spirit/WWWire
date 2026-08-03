@@ -1,16 +1,18 @@
 # Privacy Policy: WireDrafter
 
-_Last updated: 31 July 2026_
+_Last updated: 3 August 2026_
 
 WireDrafter does **not** collect, store, transmit, or sell any personal or
 browsing data.
 
 ## What data the extension handles
 
-- **Toggle state only.** A single value, whether draft mode is on or off, is
-  stored locally on your device via `chrome.storage.local`. It never leaves your
-  machine.
-That single value is the only thing the extension stores, anywhere.
+- **Toggle state only.** One boolean per tab you have drafted, held in
+  `chrome.storage.session`. That is in-memory storage on your own device: it
+  never leaves your machine, and it is discarded when Chrome closes. No tab
+  URLs, titles or identities are recorded, only an internal tab number.
+
+Those booleans are the only thing the extension stores, anywhere.
 
 ## What the extension does NOT do
 
@@ -20,10 +22,14 @@ That single value is the only thing the extension stores, anywhere.
 
 ## Permissions
 
-- `storage`, to remember the on/off toggle.
-- `<all_urls>` host access, required to render whichever page you point the tool
-  at. Page content is only read and restyled locally in your browser to draw the
-  wireframe; nothing is captured or sent.
+- `storage`, to remember which tabs are currently drafted.
+- `activeTab`, granted only at the moment you click the toolbar icon or press
+  the shortcut, and only for that one tab. The extension has no standing access
+  to any site, and requests no `<all_urls>` host permission.
+- `scripting`, to inject the renderer into the tab you just invoked it on.
+
+Page content is only read and restyled locally in your browser to draw the
+wireframe. Nothing is captured or sent.
 
 ## Contact
 
