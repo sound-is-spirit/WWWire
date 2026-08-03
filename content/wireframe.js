@@ -35,10 +35,12 @@
   const REL = "wd-rel";
   const TEXT = "wd-text";
   const THIN = "wd-thin";
+  const HEAD = "wd-head";
 
   const INK = "#111111";
   const PAPER = "#ffffff";
-  const GREY = "#c7c7c7";
+  const GREY = "#c9c9c9";
+  const DARK = "#9a9a9a"; // heading bars, so hierarchy reads
 
   // --- Sketch border --------------------------------------------------------
 
@@ -55,33 +57,52 @@
 
   // A closed rectangle whose edge points are jittered off the true line, which
   // is what reads as "drawn by hand" rather than "drawn by a compositor".
+  //
+  // The path is pinned to the nominal line exactly at the 30 and 60 slice
+  // boundaries. That is what lets border-image-repeat use `round`: each tile
+  // starts and ends on the line, so the joins are invisible. `stretch` would
+  // also avoid seams, but it stretches one wobble across the whole edge, so a
+  // wide box comes out nearly straight and loses the hand-drawn feel. With
+  // pinned boundaries the wobble keeps a constant wavelength at any width.
   function roughRectPath(seed) {
     const r = rng(seed);
-    const S = 90;
-    const pad = 6;
-    const j = 2.6;
-    const per = 4; // points per side
-    const pts = [];
-    const push = (x, y) =>
-      pts.push([
-        +(x + (r() - 0.5) * j).toFixed(2),
-        +(y + (r() - 0.5) * j).toFixed(2)
-      ]);
-    for (let i = 0; i < per; i++) push(pad + ((S - 2 * pad) * i) / per, pad);
-    for (let i = 0; i < per; i++) push(S - pad, pad + ((S - 2 * pad) * i) / per);
-    for (let i = 0; i < per; i++) push(S - pad - ((S - 2 * pad) * i) / per, S - pad);
-    for (let i = 0; i < per; i++) push(pad, S - pad - ((S - 2 * pad) * i) / per);
-    return "M" + pts.map((p) => p.join(",")).join("L") + "Z";
+    const A = 15; // rect inset inside the 90-unit source box
+    const B = 75;
+    const j = 3.5; // corner jitter, source units
+    const over = 7; // overshoot past the corner: the strongest hand-drawn tell
+    const jit = () => (r() - 0.5) * 2 * j;
+    const f = (n) => +n.toFixed(2);
+
+    // Each edge is dead straight between the slice boundaries at 30 and 60.
+    // That matters because `stretch` scales the middle slice non-uniformly: a
+    // diagonal stroke stretched across a wide box thins out and fades, while a
+    // straight one keeps constant weight at any width. All the character lives
+    // in the corner slices, which are never stretched.
+    //
+    // Drawn as four open strokes rather than one closed rectangle so the ends
+    // overshoot and cross at the corners, the way a pen does.
+    return [
+      `M${f(A - over)},${f(A + jit())}L30,${A}L60,${A}L${f(B + over)},${f(A + jit())}`,
+      `M${f(B + jit())},${f(A - over)}L${B},30L${B},60L${f(B + jit())},${f(B + over)}`,
+      `M${f(B + over)},${f(B + jit())}L60,${B}L30,${B}L${f(A - over)},${f(B + jit())}`,
+      `M${f(A + jit())},${f(B + over)}L${A},60L${A},30L${f(A + jit())},${f(A - over)}`
+    ].join("");
   }
 
   function sketchBorderImage(seed) {
     const svg =
-      "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 90'>" +
+      // width/height are required, not decorative. An SVG with only a viewBox
+      // has no intrinsic size, so `border-image-slice: 30` has no 90-unit
+      // coordinate space to slice against and Chrome resolves it against the
+      // border image area instead, which distorts the corners wildly.
+      "<svg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90'>" +
       "<path d='" +
       roughRectPath(seed) +
+      // stroke-width is in source units. The 30-unit slice renders at BAND px,
+      // so the on-screen width is 30 / BAND times smaller than the number here.
       "' fill='none' stroke='" +
       INK +
-      "' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+      "' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/></svg>";
     // encodeURIComponent turns the literal '#' in the colour into %23 for us.
     return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
   }
@@ -169,13 +190,19 @@ input, select, textarea, button {
   inset: 0 !important;
   pointer-events: none !important;
   z-index: 2147483000;
-  border: 5px solid transparent !important;
+  /* stretch, not round. round ties the repeat tile to border-image-width, so
+     the wobble repeats every few px and reads as a sawtooth, and the corner
+     slices break long edges into ticks. stretch draws each edge once: the
+     wobble becomes a single gentle wave along the edge, which is what a
+     hand-drawn box actually looks like.
+     The band is 8px rather than the ~1.6px the line needs, because the SVG is
+     scaled by band/slice; the stroke is sized in source units to compensate.
+     The ::before is inset:0 over the parent, so this border sits inside the
+     pseudo-element and changes no page layout. */
+  border: 8px solid transparent !important;
   border-image-slice: 30 !important;
-  /* stretch, not round. Round tiles the middle slice along each edge, and a
-     jittered path does not meet the slice boundary at a consistent offset, so
-     every tile join leaves a gap and the outline renders as a dashed line. */
   border-image-repeat: stretch !important;
-  border-image-width: 5px !important;
+  border-image-width: 8px !important;
 }
 `;
 
@@ -184,16 +211,22 @@ input, select, textarea, button {
   // lines instead of an assumed rhythm.
   const GREEK_CSS = `
 .${TEXT} {
+  /* Bar thickness tracks line-height but is capped: a 64px display heading
+     scaled proportionally renders as a 30px slab, which reads as a filled
+     block rather than as text. Clamped and centred in the line box instead,
+     so a big heading gets a longer bar, not a fatter one. */
+  --wd-bar: clamp(4px, calc(var(--wd-lh, 1.2em) * 0.42), 15px);
+  --wd-c: ${GREY};
   color: transparent !important;
   -webkit-text-fill-color: transparent !important;
   text-decoration-color: transparent !important;
   background-image: linear-gradient(
     to bottom,
     transparent 0,
-    transparent calc(var(--wd-lh, 1.2em) * 0.26),
-    ${GREY} calc(var(--wd-lh, 1.2em) * 0.26),
-    ${GREY} calc(var(--wd-lh, 1.2em) * 0.74),
-    transparent calc(var(--wd-lh, 1.2em) * 0.74),
+    transparent calc((var(--wd-lh, 1.2em) - var(--wd-bar)) / 2),
+    var(--wd-c) calc((var(--wd-lh, 1.2em) - var(--wd-bar)) / 2),
+    var(--wd-c) calc((var(--wd-lh, 1.2em) + var(--wd-bar)) / 2),
+    transparent calc((var(--wd-lh, 1.2em) + var(--wd-bar)) / 2),
     transparent var(--wd-lh, 1.2em)
   ) !important;
   /* --wd-tw is the measured width of the element's actual text. For a
@@ -202,9 +235,17 @@ input, select, textarea, button {
      width anyway, so it is unaffected. */
   background-size: var(--wd-tw, 100%) var(--wd-lh, 1.2em) !important;
   background-repeat: repeat-y !important;
-  background-position: 0 0 !important;
+  /* --wd-tx is the measured horizontal offset of the text from the content-box
+     edge, so a bar sits where its text sits. Anchoring at 0 would hard-left
+     every bar and break centred and right-aligned text. Measuring rather than
+     reading text-align also covers direction:rtl, margin:auto and flex/grid
+     justification for free. */
+  background-origin: content-box !important;
+  background-position: var(--wd-tx, 0px) 0 !important;
   background-clip: content-box !important;
 }
+/* Headings keep their weight so the page still has hierarchy once greeked. */
+.${TEXT}.${HEAD} { --wd-c: ${DARK}; }
 *::placeholder { color: transparent !important; -webkit-text-fill-color: transparent !important; }
 *::selection { background: transparent !important; color: transparent !important; }
 `;
@@ -251,7 +292,7 @@ input, select, textarea, button {
   // with padding, not a second structure worth outlining.
   const NEST_AREA_RATIO = 0.9;
 
-  const ALL_CLASSES = [BOX, REL, TEXT, THIN, ...VARIANT_CLASSES];
+  const ALL_CLASSES = [BOX, REL, TEXT, THIN, HEAD, ...VARIANT_CLASSES];
 
   // The DOM is the source of truth for what we tagged, so there is no parallel
   // array to keep in sync and nothing pinning up to 1500 detached nodes alive
@@ -262,6 +303,7 @@ input, select, textarea, button {
         el.classList.remove(...ALL_CLASSES);
         el.style.removeProperty("--wd-lh");
         el.style.removeProperty("--wd-tw");
+        el.style.removeProperty("--wd-tx");
       } catch (e) {
         /* node gone */
       }
@@ -348,18 +390,30 @@ input, select, textarea, button {
         const lh = parseFloat(cs.lineHeight);
         const fs = parseFloat(cs.fontSize) || 16;
         let tw = 0;
+        let tx = 0;
         try {
           textRange.selectNodeContents(el);
-          tw = textRange.getBoundingClientRect().width;
+          const tr = textRange.getBoundingClientRect();
+          tw = tr.width;
+          // Where the text actually starts, relative to the content box. For
+          // centred or right-aligned text this is non-zero, and without it the
+          // bar would be painted hard against the left edge.
+          const contentLeft =
+            rect.left +
+            (parseFloat(cs.borderLeftWidth) || 0) +
+            (parseFloat(cs.paddingLeft) || 0);
+          tx = tr.left - contentLeft;
         } catch (e) {
-          /* fall back to full width */
+          /* fall back to full width, left aligned */
         }
         texts.push({
           el,
+          head: /^H[1-6]$/.test(el.tagName) || fs >= 24,
           lh: isFinite(lh) && lh > 0 ? lh : fs * 1.2,
           // Only worth setting when the text is meaningfully narrower than its
           // box; otherwise leave the CSS default of 100%.
-          tw: tw > 0 && tw < w - 2 ? tw : 0
+          tw: tw > 0 && tw < w - 2 ? tw : 0,
+          tx: Math.abs(tx) > 1 ? tx : 0
         });
       }
 
@@ -413,8 +467,10 @@ input, select, textarea, button {
     for (const t of texts) {
       try {
         t.el.classList.add(TEXT);
+        if (t.head) t.el.classList.add(HEAD);
         t.el.style.setProperty("--wd-lh", t.lh + "px");
         if (t.tw) t.el.style.setProperty("--wd-tw", t.tw + "px");
+        if (t.tx) t.el.style.setProperty("--wd-tx", t.tx + "px");
       } catch (e) {
         /* ignore */
       }
