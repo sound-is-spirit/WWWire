@@ -85,30 +85,30 @@ const DEFAULT_ICON_PATHS = {
   128: "icons/bar128.png"
 };
 
+// The ON chip is deterministic, so it is rasterised once per worker lifetime
+// rather than on every toggle (3 OffscreenCanvas allocations plus a font-fitting
+// measureText loop each time).
+let onIconData = null;
+function onIcon() {
+  if (!onIconData) {
+    onIconData = { 16: makeOnIcon(16), 32: makeOnIcon(32), 48: makeOnIcon(48) };
+  }
+  return onIconData;
+}
+
 async function refreshIcon(tabId, enabled) {
-  try {
-    if (enabled) {
-      await chrome.action.setIcon({
-        tabId,
-        imageData: { 16: makeOnIcon(16), 32: makeOnIcon(32), 48: makeOnIcon(48) }
-      });
-    } else {
-      // Passing the packaged paths for this tab resets it to the default look.
-      await chrome.action.setIcon({ tabId, path: DEFAULT_ICON_PATHS });
-    }
-  } catch (e) {
-    /* tab closed mid-update, or action unavailable during startup */
-  }
-  try {
-    await chrome.action.setTitle({
-      tabId,
-      title: enabled
-        ? "WireDrafter: ON for this tab (click to turn off)"
-        : "WireDrafter: click to draft this tab"
-    });
-  } catch (e) {
-    /* ignore */
-  }
+  const icon = enabled
+    ? { tabId, imageData: onIcon() }
+    : // Passing the packaged paths for this tab resets it to the default look.
+      { tabId, path: DEFAULT_ICON_PATHS };
+  const title = enabled
+    ? "WireDrafter: ON for this tab (click to turn off)"
+    : "WireDrafter: click to draft this tab";
+  // Independent calls, so they overlap instead of serialising.
+  await Promise.all([
+    chrome.action.setIcon(icon).catch(() => {}),
+    chrome.action.setTitle({ tabId, title }).catch(() => {})
+  ]);
 }
 
 // --- Injection -------------------------------------------------------------
@@ -116,17 +116,30 @@ async function refreshIcon(tabId, enabled) {
 // Always inject before messaging. The content script guards against re-running,
 // so this is cheap and removes any need to track which frames are already live
 // (a tab can navigate, or the worker can restart, at any time).
+// Order matters: engine.js defines window.__WD, and every feature module bails
+// out immediately if it is missing.
+const CONTENT_FILES = ["content/engine.js", "content/wireframe.js"];
+
 async function injectInto(tabId) {
   await chrome.scripting.executeScript({
     target: { tabId, allFrames: true },
-    files: ["content_isolated.js"]
+    files: CONTENT_FILES
   });
 }
+
+// The flags the modules declare. The worker does not interpret them; it stores
+// what the UI asked for and hands the object to the engine, which merges it over
+// whatever defaults its registered modules declared.
+const ON_STATE = { wireframe: true, greek: true, crisp: false };
+const OFF_STATE = { wireframe: false, greek: false, crisp: false };
 
 async function pushState(tabId, enabled) {
   await injectInto(tabId);
   try {
-    await chrome.tabs.sendMessage(tabId, { type: MSG_SET_STATE, enabled });
+    await chrome.tabs.sendMessage(tabId, {
+      type: MSG_SET_STATE,
+      state: enabled ? ON_STATE : OFF_STATE
+    });
   } catch (e) {
     // Some frames legitimately have no listener (about:blank, sandboxed docs).
     // The injection above is what matters; a missing responder is not fatal.
