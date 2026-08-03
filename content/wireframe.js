@@ -34,6 +34,7 @@
   const BOX = "wd-box";
   const REL = "wd-rel";
   const TEXT = "wd-text";
+  const THIN = "wd-thin";
 
   const INK = "#111111";
   const PAPER = "#ffffff";
@@ -160,6 +161,8 @@ input, select, textarea, button {
 `;
 
   const SKETCH_GEOMETRY = `
+.${BOX}.${THIN} { box-shadow: 0 0 0 1px ${INK} !important; }
+.${BOX}.${THIN}::before { content: none !important; }
 .${BOX}::before {
   content: "" !important;
   position: absolute !important;
@@ -168,7 +171,10 @@ input, select, textarea, button {
   z-index: 2147483000;
   border: 5px solid transparent !important;
   border-image-slice: 30 !important;
-  border-image-repeat: round !important;
+  /* stretch, not round. Round tiles the middle slice along each edge, and a
+     jittered path does not meet the slice boundary at a consistent offset, so
+     every tile join leaves a gap and the outline renders as a dashed line. */
+  border-image-repeat: stretch !important;
   border-image-width: 5px !important;
 }
 `;
@@ -184,13 +190,17 @@ input, select, textarea, button {
   background-image: linear-gradient(
     to bottom,
     transparent 0,
-    transparent calc(var(--wd-lh, 1.2em) * 0.18),
-    ${GREY} calc(var(--wd-lh, 1.2em) * 0.18),
-    ${GREY} calc(var(--wd-lh, 1.2em) * 0.82),
-    transparent calc(var(--wd-lh, 1.2em) * 0.82),
+    transparent calc(var(--wd-lh, 1.2em) * 0.26),
+    ${GREY} calc(var(--wd-lh, 1.2em) * 0.26),
+    ${GREY} calc(var(--wd-lh, 1.2em) * 0.74),
+    transparent calc(var(--wd-lh, 1.2em) * 0.74),
     transparent var(--wd-lh, 1.2em)
   ) !important;
-  background-size: 100% var(--wd-lh, 1.2em) !important;
+  /* --wd-tw is the measured width of the element's actual text. For a
+     single-line heading that is the word, not the column, which stops short
+     headings rendering as full-width slabs. Multi-line text measures full
+     width anyway, so it is unaffected. */
+  background-size: var(--wd-tw, 100%) var(--wd-lh, 1.2em) !important;
   background-repeat: repeat-y !important;
   background-position: 0 0 !important;
   background-clip: content-box !important;
@@ -216,12 +226,32 @@ input, select, textarea, button {
   ]);
   const SKIP = new Set(["SCRIPT", "STYLE", "LINK", "META", "TITLE", "HEAD", "NOSCRIPT"]);
 
-  const MIN_W = 24;
-  const MIN_H = 16;
-  const MIN_AREA = 900;
+  const MIN_W = 40;
+  const MIN_H = 24;
+  const MIN_AREA = 2000;
   const MAX_BOXES = 1500; // guard against pathological pages
 
-  const ALL_CLASSES = [BOX, REL, TEXT, ...VARIANT_CLASSES];
+  // A rule, a divider or a 1px spacer is not structure. Anything this far from
+  // square is a line pretending to be a box.
+  const MAX_ASPECT = 25;
+
+  // border-image lays four corner tiles of border-image-width before the middle
+  // tile repeats. Below roughly 4x that width there is no middle left, so the
+  // sketch stroke collapses into four corner ticks (and on short elements the
+  // top and bottom strokes overlap into a scribble). Small boxes get the crisp
+  // hairline instead: same information, no artefact.
+  const SKETCH_MIN = 56;
+
+  // A box within this many px of its nearest boxed ancestor on all four edges
+  // is that ancestor drawn twice. Exact-rect keying missed these because real
+  // wrappers differ by a pixel or two of padding.
+  const NEST_TOL = 6;
+
+  // A child filling this much of its nearest boxed ancestor is that ancestor
+  // with padding, not a second structure worth outlining.
+  const NEST_AREA_RATIO = 0.9;
+
+  const ALL_CLASSES = [BOX, REL, TEXT, THIN, ...VARIANT_CLASSES];
 
   // The DOM is the source of truth for what we tagged, so there is no parallel
   // array to keep in sync and nothing pinning up to 1500 detached nodes alive
@@ -231,6 +261,7 @@ input, select, textarea, button {
       try {
         el.classList.remove(...ALL_CLASSES);
         el.style.removeProperty("--wd-lh");
+        el.style.removeProperty("--wd-tw");
       } catch (e) {
         /* node gone */
       }
@@ -255,6 +286,27 @@ input, select, textarea, button {
     const boxes = [];
     const texts = [];
     const seenRects = new Set();
+    const keptRects = new Map();
+    // One Range reused for every measurement rather than one per element.
+    const textRange = document.createRange();
+
+    // Nearest already-boxed ancestor's rect, crossing shadow boundaries via the
+    // host. Walking up is O(depth), not another pass over the candidate list.
+    function boxedAncestorRect(el) {
+      let node = el;
+      for (let hops = 0; hops < 14; hops++) {
+        let parent = node.parentElement;
+        if (!parent) {
+          const root = node.getRootNode && node.getRootNode();
+          parent = root && root.host ? root.host : null;
+        }
+        if (!parent) return null;
+        const r = keptRects.get(parent);
+        if (r) return r;
+        node = parent;
+      }
+      return null;
+    }
 
     for (const el of WD.queryAll("*")) {
       if (SKIP.has(el.tagName)) continue;
@@ -272,11 +324,16 @@ input, select, textarea, button {
       // Cheap geometry rejection first: a zero-size box also covers
       // display:none, so most candidates never reach getComputedStyle.
       const media = MEDIA_TAGS.has(el.tagName);
+      const w = rect.width;
+      const h = rect.height;
       const bigEnough = media
-        ? rect.width >= 8 && rect.height >= 8
-        : rect.width >= MIN_W &&
-          rect.height >= MIN_H &&
-          rect.width * rect.height >= MIN_AREA;
+        ? w >= 8 && h >= 8
+        : w >= MIN_W &&
+          h >= MIN_H &&
+          w * h >= MIN_AREA &&
+          // Reject rules, dividers and spacer strips.
+          w <= h * MAX_ASPECT &&
+          h <= w * MAX_ASPECT;
       if (!wantsText && !bigEnough) continue;
 
       let cs;
@@ -290,23 +347,59 @@ input, select, textarea, button {
       if (wantsText) {
         const lh = parseFloat(cs.lineHeight);
         const fs = parseFloat(cs.fontSize) || 16;
-        texts.push({ el, lh: isFinite(lh) && lh > 0 ? lh : fs * 1.2 });
+        let tw = 0;
+        try {
+          textRange.selectNodeContents(el);
+          tw = textRange.getBoundingClientRect().width;
+        } catch (e) {
+          /* fall back to full width */
+        }
+        texts.push({
+          el,
+          lh: isFinite(lh) && lh > 0 ? lh : fs * 1.2,
+          // Only worth setting when the text is meaningfully narrower than its
+          // box; otherwise leave the CSS default of 100%.
+          tw: tw > 0 && tw < w - 2 ? tw : 0
+        });
       }
 
       if (!wantsBox || !bigEnough) continue;
       // An inline box has no meaningful rectangle to outline.
       if (!media && cs.display === "inline") continue;
 
-      // Outlining a wrapper and its only child draws the same line twice.
-      // Keying on the rounded rect is O(n); the pairwise ±2px comparison this
-      // replaces was ~1.1M DOMRect reads at the MAX_BOXES ceiling.
+      // Two kinds of duplicate. Exact-rect keying catches unrelated elements
+      // that happen to coincide; the ancestor walk catches the common case of a
+      // wrapper chain whose links differ by a pixel or two of padding, which is
+      // what produced the nested near-identical rectangles on real pages.
       const key =
         Math.round(rect.top) + "|" + Math.round(rect.left) + "|" +
-        Math.round(rect.width) + "|" + Math.round(rect.height);
+        Math.round(w) + "|" + Math.round(h);
       if (seenRects.has(key)) continue;
-      seenRects.add(key);
 
-      boxes.push({ el, isStatic: cs.position === "static" });
+      const near = boxedAncestorRect(el);
+      if (near) {
+        const tight =
+          Math.abs(near.top - rect.top) <= NEST_TOL &&
+          Math.abs(near.left - rect.left) <= NEST_TOL &&
+          Math.abs(near.right - rect.right) <= NEST_TOL &&
+          Math.abs(near.bottom - rect.bottom) <= NEST_TOL;
+        // A fixed pixel tolerance cannot catch a padding-only wrapper: 16px of
+        // padding is well past it, yet the two boxes are the same box to the
+        // eye. Area ratio is scale-independent and does catch it.
+        const nearArea = near.width * near.height;
+        const filled = nearArea > 0 && (w * h) / nearArea > NEST_AREA_RATIO;
+        if (tight || filled) continue;
+      }
+
+      seenRects.add(key);
+      keptRects.set(el, rect);
+      boxes.push({
+        el,
+        isStatic: cs.position === "static",
+        // Below the sketch-viable size the border-image would render as four
+        // corner ticks, so these get the crisp hairline instead.
+        thin: w < SKETCH_MIN || h < SKETCH_MIN
+      });
       if (boxes.length >= MAX_BOXES) break;
     }
 
@@ -314,12 +407,14 @@ input, select, textarea, button {
     boxes.forEach((b, i) => {
       b.el.classList.add(BOX, VARIANT_CLASSES[i % VARIANT_CLASSES.length]);
       if (b.isStatic) b.el.classList.add(REL);
+      if (b.thin) b.el.classList.add(THIN);
     });
 
     for (const t of texts) {
       try {
         t.el.classList.add(TEXT);
         t.el.style.setProperty("--wd-lh", t.lh + "px");
+        if (t.tw) t.el.style.setProperty("--wd-tw", t.tw + "px");
       } catch (e) {
         /* ignore */
       }
