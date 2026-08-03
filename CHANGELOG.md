@@ -1,38 +1,35 @@
 # Changelog
 
-All notable changes to GreyOut are documented here.
+All notable changes to WireDrafter are documented here.
 
-## [2.2.0] — Renamed, enterprise policy removed
+WireDrafter is a new product built on the engine of
+[GreyOut](https://github.com/sound-is-spirit/GreyOut). Versioning restarts at
+`0.1.0`; the GreyOut history (up to 2.2.0) lives in that repository.
 
-### Changed
-- Renamed from **Page GreyOut** to **GreyOut**.
-
-### Removed
-- **Enterprise managed policy.** `chrome.storage.managed`, `schema.json` and the
-  `ForceEnableOnDomains` handling are gone. The on/off state now comes solely
-  from the user's own toggle, and the extension no longer reads
-  `location.hostname`.
-
-## [2.1.0] — Security hardening
+## [0.1.0] Forked from GreyOut
 
 ### Changed
-- **Removed all MAIN-world injection.** Shadow DOM is now reached from the
-  ISOLATED world via `chrome.dom.openOrClosedShadowRoot()` instead of
-  monkey-patching `Element.prototype.attachShadow`. This eliminates
-  WAF/anti-bot fingerprinting, prototype-pollution, and DOM-event-spoofing risks.
-- **Dropped the `scripting` permission** (no longer needed). Permissions are now
-  `storage` + `<all_urls>` host access.
-- **Removed cross-frame `postMessage`.** Each frame reads its own state from
-  `chrome.storage`, so there is no wildcard message channel to intercept.
+- **Renamed to WireDrafter** and reframed from a screen-sharing redaction tool
+  to a lo-fi wireframing tool. Version reset to `0.1.0`.
+- Font families renamed from `GreyOut Block` / `GreyOut Script` to
+  **`Draft Bar`** / **`Draft Scribble`**. The underlying Redacted WOFF2 payloads
+  are unchanged and deliberately retained: they are the wireframe text renderer,
+  not dead weight.
+- Internal identifiers renamed: `greyout-style` to `wiredrafter-style`,
+  `data-greyout` to `data-wiredrafter`.
+- Keyboard command renamed from `toggle-anonymizer` to `toggle-draft`. The
+  default binding (`Ctrl/Cmd+Shift+Y`) is unchanged.
 
-### Added
-- Repository governance: `LICENSE` (MIT), `SECURITY.md`, `PRIVACY.md`.
+### Carried over from GreyOut 2.2.0
+- Universal `*` glyph substitution renders all page text as grey bars with zero
+  layout shift.
+- Shadow DOM coverage (open and closed) via
+  `chrome.dom.openOrClosedShadowRoot()`, from the ISOLATED world only. No
+  MAIN-world injection, no prototype patching.
+- Permissions: `storage` plus `<all_urls>` host access. No `scripting`, `tabs`,
+  `cookies` or `webRequest`.
+- No network requests, no remote code, no data collection.
 
-## [2.0.0] — Universal engine
-
-- Rewrote masking as **universal glyph substitution**: a single `*` rule renders
-  every glyph in an embedded "Redacted" block font, in flat grey — no background
-  boxes, so redacted regions never stack into darker nested boxes, and no element
-  can be missed. Zero layout shift.
-- Direct click-to-toggle toolbar icon with ON/OFF badge; `Ctrl/Cmd+Shift+Y`.
-- Works on all sites (`<all_urls>`), default OFF.
+### Not yet implemented
+The structural wireframe layer, the node-selection heuristic, edit mode, export,
+and the `activeTab` + per-tab-state rework. See the README roadmap.

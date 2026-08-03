@@ -1,11 +1,11 @@
-// GreyOut — background service worker (Manifest V3)
+// WireDrafter — background service worker (Manifest V3)
 //
 // Responsibilities:
 //   1. Persist the default toggle state in chrome.storage.local.
 //   2. Toggle state on the toolbar icon click and the keyboard command.
 //   3. Draw the toolbar icon so it reads "OFF" / "ON" inside a grey box.
 //
-// All redaction (light DOM AND Shadow DOM) happens in content_isolated.js,
+// All rendering (light DOM AND Shadow DOM) happens in content_isolated.js,
 // entirely within the ISOLATED world — no MAIN-world injection, so this worker
 // needs no "scripting" permission and never touches the host page's runtime.
 
@@ -68,8 +68,8 @@ async function refreshIcon(enabled) {
   try {
     await chrome.action.setTitle({
       title: enabled
-        ? "GreyOut — ON (click to disable)"
-        : "GreyOut — OFF (click to enable)"
+        ? "WireDrafter: ON (click to disable)"
+        : "WireDrafter: OFF (click to enable)"
     });
   } catch (e) {
     /* ignore */
@@ -105,7 +105,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 
 // Keyboard shortcut (Ctrl/Cmd+Shift+Y by default).
 chrome.commands.onCommand.addListener((command) => {
-  if (command === "toggle-anonymizer") toggleState();
+  if (command === "toggle-draft") toggleState();
 });
 
 // Primary interaction: there is no popup, so clicking the toolbar icon toggles

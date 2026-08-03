@@ -1,8 +1,13 @@
-// GreyOut — ISOLATED world content script.
+// WireDrafter — ISOLATED world content script.
 //
-// This is the whole extension's engine — it runs at document_start in every
-// frame (all_frames + match_about_blank), entirely within the ISOLATED world.
-// There is NO MAIN-world injection and NO host-page prototype patching. It:
+// v0.1.0 ships the text-bar layer only: the engine inherited from GreyOut, which
+// renders every glyph on the page as a solid grey bar. That is the text
+// primitive of a lo-fi wireframe; the structural layer (sketch boxes) and edit
+// mode are not implemented yet. See README "Roadmap".
+//
+// It runs at document_start in every frame (all_frames + match_about_blank),
+// entirely within the ISOLATED world. There is NO MAIN-world injection and NO
+// host-page prototype patching. It:
 //   1. Builds a stylesheet with an embedded Base64 "Redacted" web font plus a
 //      UNIVERSAL glyph-substitution rule: every text glyph becomes a solid grey
 //      block. No background boxes are used, so masked regions never stack into
@@ -19,9 +24,10 @@
   "use strict";
 
   // ---------------------------------------------------------------------------
-  // Embedded fonts (WOFF2, Base64). "Redacted" by Christian Naths (OFL).
+  // Embedded fonts (WOFF2, Base64, ~10 KB decoded). "Redacted" by Christian
+  // Naths (OFL). Deliberately kept: these are the wireframe text renderer.
   //   - REDACTED_SCRIPT: handwriting-style scribble.
-  //   - REDACTED_BLOCK : solid geometric blocks (used as the primary glyph
+  //   - REDACTED_BLOCK : solid geometric bars (used as the primary glyph
   //                       substitute; keeps exact text geometry => zero shift).
   // Embedding as a Data URI avoids any network request / Flash Of Unstyled
   // Content and lets the same @font-face live inside every Shadow Root.
@@ -49,14 +55,14 @@
 
     return `
 @font-face {
-  font-family: 'GreyOut Block';
+  font-family: 'Draft Bar';
   font-style: normal;
   font-weight: 400;
   font-display: block;
   src: url(data:application/font-woff2;charset=utf-8;base64,${REDACTED_BLOCK_B64}) format('woff2');
 }
 @font-face {
-  font-family: 'GreyOut Script';
+  font-family: 'Draft Scribble';
   font-style: normal;
   font-weight: 400;
   font-display: block;
@@ -77,7 +83,7 @@
      - ICONS SURVIVE: SVG/img are not text, and glyph-font icons are restored
        by the ICON_KEEP rule below. */
 * {
-  font-family: 'GreyOut Block', 'GreyOut Script', monospace !important;
+  font-family: 'Draft Bar', 'Draft Scribble', monospace !important;
   color: #bcbcbc !important;
   -webkit-text-fill-color: #bcbcbc !important;
   caret-color: transparent !important;
@@ -128,10 +134,10 @@ ${ICON_KEEP} {
   let styleEl = null;
   function ensureStyleEl() {
     if (styleEl && styleEl.isConnected) return styleEl;
-    styleEl = document.getElementById("greyout-style");
+    styleEl = document.getElementById("wiredrafter-style");
     if (!styleEl) {
       styleEl = document.createElement("style");
-      styleEl.id = "greyout-style";
+      styleEl.id = "wiredrafter-style";
       styleEl.textContent = CSS_TEXT;
     }
     return styleEl;
@@ -179,9 +185,9 @@ ${ICON_KEEP} {
 
   function styleOneShadow(root) {
     try {
-      if (root && !root.querySelector("style[data-greyout]")) {
+      if (root && !root.querySelector("style[data-wiredrafter]")) {
         const s = document.createElement("style");
-        s.setAttribute("data-greyout", "1");
+        s.setAttribute("data-wiredrafter", "1");
         s.textContent = CSS_TEXT;
         root.appendChild(s);
       }
@@ -192,7 +198,7 @@ ${ICON_KEEP} {
 
   function unstyleOneShadow(root) {
     try {
-      const s = root && root.querySelector("style[data-greyout]");
+      const s = root && root.querySelector("style[data-wiredrafter]");
       if (s && s.parentNode) s.parentNode.removeChild(s);
     } catch (e) {
       /* ignore */
@@ -249,7 +255,7 @@ ${ICON_KEEP} {
     else removeFromDocument();
     try {
       console.info(
-        "[GreyOut] " +
+        "[WireDrafter] " +
           (enabled ? "ON" : "OFF") +
           (window.top === window ? " (top frame)" : " (frame)")
       );

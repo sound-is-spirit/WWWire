@@ -14,10 +14,12 @@ Instead, report privately via GitHub's **[Security Advisories](../../security/ad
 You can expect an acknowledgement within a few days. Please allow a reasonable
 period for a fix before any public disclosure.
 
-## Security model — what this extension is (and is not)
+## Security model: what this extension is (and is not)
 
-GreyOut is a **visual privacy shield** for screen sharing. It re-renders
-on-screen text as grey blocks via CSS. It is **not** a data-security control:
+WireDrafter is a **visual rendering tool**. It re-renders a page as a lo-fi
+wireframe via CSS, currently by turning on-screen text into grey bars. People do
+use that as a screen-sharing privacy shield, so to be explicit: it is **not** a
+data-security control.
 
 - The real text still exists in the DOM and page memory. It can be recovered via
   DevTools, copy/paste, accessibility tools, or scripts running on the page.
@@ -33,7 +35,7 @@ on-screen text as grey blocks via CSS. It is **not** a data-security control:
   prototypes (e.g. `Element.prototype.attachShadow`). Shadow DOM is reached via
   the privileged `chrome.dom.openOrClosedShadowRoot()` API.
 - **Minimal permissions.** `storage` only, plus `<all_urls>` host access needed to
-  redact any page the user chooses to share. No `scripting`, `tabs`, `cookies`,
+  render any page the user points the tool at. No `scripting`, `tabs`, `cookies`,
   or `webRequest`.
 - **No cross-frame `postMessage`.** Every frame reads its own state from
   `chrome.storage`, so there is no message channel for a page to intercept.

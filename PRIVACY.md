@@ -1,13 +1,13 @@
-# Privacy Policy — GreyOut
+# Privacy Policy: WireDrafter
 
 _Last updated: 31 July 2026_
 
-GreyOut does **not** collect, store, transmit, or sell any personal or
+WireDrafter does **not** collect, store, transmit, or sell any personal or
 browsing data.
 
 ## What data the extension handles
 
-- **Toggle state only.** A single value — whether redaction is on or off — is
+- **Toggle state only.** A single value, whether draft mode is on or off, is
   stored locally on your device via `chrome.storage.local`. It never leaves your
   machine.
 That single value is the only thing the extension stores, anywhere.
@@ -20,12 +20,12 @@ That single value is the only thing the extension stores, anywhere.
 
 ## Permissions
 
-- `storage` — remember the on/off toggle.
-- `<all_urls>` host access — required to apply the visual redaction to whichever
-  page you choose to share. Page content is only read/modified locally in your
-  browser to render the grey overlay; nothing is captured or sent.
+- `storage`, to remember the on/off toggle.
+- `<all_urls>` host access, required to render whichever page you point the tool
+  at. Page content is only read and restyled locally in your browser to draw the
+  wireframe; nothing is captured or sent.
 
 ## Contact
 
 For privacy questions, open an issue at
-https://github.com/sound-is-spirit/GreyOut/issues.
+https://github.com/sound-is-spirit/WireDrafter/issues.

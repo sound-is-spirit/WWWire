@@ -1,15 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "GreyOut",
-  "version": "2.2.0",
-  "description": "Masks all on-screen text with grey blocks for safe screen sharing, demos and screenshots. Works on any page.",
+  "name": "WireDrafter",
+  "version": "0.1.0",
+  "description": "Turn any website into an editable lo-fi wireframe. Strip the styling, sketch the structure, move and delete anything.",
   "permissions": ["storage"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "GreyOut",
+    "default_title": "WireDrafter",
     "default_icon": {
       "16": "icons/bar16.png",
       "32": "icons/bar32.png",
@@ -33,12 +33,12 @@
     }
   ],
   "commands": {
-    "toggle-anonymizer": {
+    "toggle-draft": {
       "suggested_key": {
         "default": "Ctrl+Shift+Y",
         "mac": "Command+Shift+Y"
       },
-      "description": "Toggle anonymization on/off"
+      "description": "Toggle draft mode on/off"
     }
   }
 }
