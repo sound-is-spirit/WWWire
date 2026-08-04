@@ -6,6 +6,17 @@ WireDrafter is a new product built on the engine of
 [GreyOut](https://github.com/sound-is-spirit/GreyOut). Versioning restarts at
 `0.1.0`; the GreyOut history (up to 2.2.0) lives in that repository.
 
+## [0.3.3] Selection state for added elements
+
+### Added
+- **Added elements now have a selection state.** The delete button and the
+  resize gripper are hidden by default, appear on hover so they stay
+  discoverable, and remain while the element is selected so a resize does not
+  cancel itself when the pointer leaves the corner. A selected element carries a
+  dashed outline. Clicking anywhere else drops the selection.
+- Handles use `display` rather than `opacity`, so a hidden handle cannot swallow
+  a click meant for the element underneath.
+
 ## [0.3.2] Added elements: resize, contrast, handle visibility
 
 ### Fixed

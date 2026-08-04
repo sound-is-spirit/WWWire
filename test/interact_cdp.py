@@ -96,8 +96,22 @@ st = ev("(()=>{const e=document.querySelector('.wd-added');const c=getComputedSt
 check("white fill, not a grey wash", st["bg"] == "rgb(255, 255, 255)", st["bg"])
 check("black border", st["bc"] in ("rgb(17, 17, 17)", "rgb(0, 0, 0)"), st["bc"])
 
+print("\n-- handles hide until hover or selection --")
+vis = "(s)=>getComputedStyle(document.querySelector(s)).display"
+mouse("mouseMoved", 5, 5)  # park the pointer well away
+time.sleep(0.2)
+check("delete button hidden when idle", ev(f"({vis})('.wd-del')") == "none",
+      ev(f"({vis})('.wd-del')"))
+check("gripper hidden when idle", ev(f"({vis})('.wd-grip')") == "none")
+mouse("mouseMoved", box["x"] + box["w"] / 2, box["y"] + box["h"] / 2)
+time.sleep(0.25)
+check("both appear on hover",
+      ev(f"({vis})('.wd-del')") != "none" and ev(f"({vis})('.wd-grip')") != "none")
+
 print("\n-- resize from the corner --")
 drag(box["r"] - 6, box["b"] - 6, box["r"] + 70, box["b"] + 50)
+check("element is selected after a gesture",
+      ev("document.querySelector('.wd-added').classList.contains('wd-sel')"))
 after = ev("(()=>{const r=document.querySelector('.wd-added').getBoundingClientRect();"
            "return {w:r.width,h:r.height,x:r.x,y:r.y}})()")
 check("width grew", after["w"] > box["w"] + 40, f'{box["w"]:.0f} -> {after["w"]:.0f}')
@@ -115,9 +129,22 @@ check("moved left", moved["x"] < after["x"] - 90, f'{after["x"]:.0f} -> {moved["
 check("moved down", moved["y"] > after["y"] + 40, f'{after["y"]:.0f} -> {moved["y"]:.0f}')
 check("drag did not resize it", abs(moved["w"] - after["w"]) < 3 and abs(moved["h"] - after["h"]) < 3)
 
+print("\n-- selection survives the pointer leaving --")
+mouse("mouseMoved", 5, 5)
+time.sleep(0.25)
+check("handles stay visible while selected", ev(f"({vis})('.wd-grip')") != "none",
+      ev(f"({vis})('.wd-grip')"))
+click(5, 5)
+time.sleep(0.2)
+check("clicking the page deselects", 
+      not ev("document.querySelector('.wd-added').classList.contains('wd-sel')"))
+check("handles hidden again after deselect", ev(f"({vis})('.wd-grip')") == "none")
+
 print("\n-- delete button --")
+mouse("mouseMoved", moved["x"] + moved["w"] / 2, moved["y"] + moved["h"] / 2)
+time.sleep(0.2)
 click(moved["x"] + moved["w"] - 11, moved["y"] + 11)
-check("red x removes the element", ev("document.querySelectorAll('.wd-added').length") == 0)
+check("delete button removes the element", ev("document.querySelectorAll('.wd-added').length") == 0)
 
 print(f"\n{sum(results)}/{len(results)} passed")
 sys.exit(0 if all(results) else 1)

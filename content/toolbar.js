@@ -44,6 +44,7 @@
   const INNER = "wd-text-inner";
   const DEL = "wd-del";
   const GRIP = "wd-grip";
+  const SEL = "wd-sel";
 
   let host = null;   // claimed element in the page, the shadow boundary
   let panel = null;  // the actual UI, inside the shadow root
@@ -109,6 +110,16 @@
   font: 700 15px/22px system-ui, sans-serif; text-align: center;
   cursor: pointer; z-index: 2147483647;
 }
+
+/* Handles are chrome, not content: on every box at once they are noise. They
+   appear on hover so they are discoverable, and stay while the element is
+   selected so a resize does not cancel itself the moment the pointer leaves
+   the corner. display rather than opacity, so a hidden handle cannot swallow
+   a click meant for the element underneath. */
+.${DEL}, .${GRIP} { display: none; }
+.${ADDED}:hover > .${DEL}, .${ADDED}:hover > .${GRIP},
+.${ADDED}.${SEL} > .${DEL}, .${ADDED}.${SEL} > .${GRIP} { display: block; }
+.${ADDED}.${SEL} { outline: 1px dashed #111; outline-offset: 2px; }
 `;
 
   // --- Added elements -------------------------------------------------------
@@ -191,6 +202,7 @@
     let h0 = 0;
     onDrag(grip, {
       start() {
+        select(el);
         w0 = el.offsetWidth;
         h0 = el.offsetHeight;
       },
@@ -206,6 +218,22 @@
   // hint buys nothing, and setting it on pointerdown promotes the element to a
   // fresh layer at click time. That repaint is what made the delete button and
   // the gripper appear only once the element had been clicked.
+  function select(el) {
+    for (const other of document.querySelectorAll("." + ADDED + "." + SEL)) {
+      if (other !== el) other.classList.remove(SEL);
+    }
+    if (el) el.classList.add(SEL);
+  }
+
+  // Clicking anywhere that is not an added element drops the selection. Capture
+  // phase and passive: we only observe, so a page that stops propagation on its
+  // own handlers cannot strand a selection, and we never block the page.
+  function onDocPointerDown(e) {
+    const t = e.composedPath ? e.composedPath()[0] : e.target;
+    if (t && t.closest && t.closest("." + ADDED)) return;
+    select(null);
+  }
+
   function makeDraggable(el) {
     let left0 = 0;
     let top0 = 0;
@@ -216,6 +244,7 @@
         (e.target.dataset && (e.target.dataset.wdDelete || e.target.dataset.wdGrip)) ||
         e.target.isContentEditable,
       start() {
+        select(el);
         left0 = parseFloat(el.style.left) || 0;
         top0 = parseFloat(el.style.top) || 0;
       },
@@ -355,11 +384,16 @@
     css: () => ADDED_CSS,
     mount(state) {
       createToolbar(state);
+      window.addEventListener("pointerdown", onDocPointerDown, {
+        capture: true,
+        passive: true
+      });
     },
     update(state) {
       updateUI(state);
     },
     unmount() {
+      window.removeEventListener("pointerdown", onDocPointerDown, true);
       if (host) host.remove();
       host = null;
       panel = null;
