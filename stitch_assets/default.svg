@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#111111"/>
+  <!-- Prominent blueprint grid -->
+  <path d="M0 32 H128 M0 64 H128 M0 96 H128 M32 0 V128 M64 0 V128 M96 0 V128" stroke="white" stroke-width="1.5" opacity="0.4" fill="none"/>
+  <!-- Modest, thin-line structural W -->
+  <path d="M36 48 L50 84 L64 48 L78 84 L92 48" stroke="white" stroke-width="4" fill="none" stroke-linecap="square" stroke-linejoin="miter"/>
+</svg>
