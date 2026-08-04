@@ -1,4 +1,4 @@
-// WireDrafter — wireframe renderer.
+// WireDrafter - wireframe renderer.
 //
 // Turns the page into a high-contrast lo-fi wireframe: flat white surfaces,
 // black type, original decoration stripped, media collapsed to solid grey, and
@@ -30,6 +30,8 @@
   const WD = window.__WD;
   if (!WD || WD.wireframeLoaded) return;
   WD.wireframeLoaded = true;
+
+  const NOT_OWN = WD.NOT_OWN;
 
   const BOX = "wd-box";
   const REL = "wd-rel";
@@ -111,8 +113,7 @@
   const VARIANT_CLASSES = SEEDS.map((_, i) => "wd-v" + i);
 
   // Built on first use, not at injection time: with allFrames a 30-iframe page
-  // would otherwise pay for four SVG builds per frame, including in crisp mode
-  // where the variants are never referenced.
+  // would otherwise pay for four SVG builds per frame.
   let variantRules = null;
   function sketchRules() {
     if (variantRules === null) {
@@ -126,8 +127,7 @@
 
   // --- CSS ------------------------------------------------------------------
   //
-  // Constant except for the `crisp` flag, so each variant is built at most once
-  // rather than rebuilt on every state push.
+  // Constant, so it is built once rather than rebuilt on every state push.
 
   // Original borders are hidden rather than recoloured: the sketch outlines are
   // the only lines that should survive, and leaving the page's own borders in
@@ -137,7 +137,7 @@
   // them to the greeked-text class would miss <input placeholder>, which has no
   // child text node and so can never earn that class, leaking the placeholder.
   const BASE_CSS = `
-* {
+*${NOT_OWN} {
   background-color: ${PAPER} !important;
   background-image: none !important;
   color: ${INK} !important;
@@ -154,15 +154,17 @@ html, body { background: ${PAPER} !important; }
 
 /* Media collapses to a flat grey plate. contrast(0) maps every channel to
    0.5; alpha is untouched, so transparent icon padding stays transparent. */
-img, video, canvas, svg, picture, iframe, object, embed {
+img${NOT_OWN}, video${NOT_OWN}, canvas${NOT_OWN}, svg${NOT_OWN},
+picture${NOT_OWN}, iframe${NOT_OWN}, object${NOT_OWN}, embed${NOT_OWN} {
   filter: grayscale(1) contrast(0) !important;
 }
-img, video, canvas, iframe, object, embed {
+img${NOT_OWN}, video${NOT_OWN}, canvas${NOT_OWN},
+iframe${NOT_OWN}, object${NOT_OWN}, embed${NOT_OWN} {
   background-color: ${GREY} !important;
   opacity: 1 !important;
 }
 
-input, select, textarea, button {
+input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
   background-color: ${PAPER} !important;
   color: ${INK} !important;
   -webkit-appearance: none !important;
@@ -175,10 +177,6 @@ input, select, textarea, button {
    at (0,1,0) specificity and last in source order it would beat a page rule
    like \`.card { position: absolute }\` and silently reflow the layout. */
 .${REL} { position: relative !important; }
-`;
-
-  const CRISP_CSS = `
-.${BOX} { box-shadow: 0 0 0 1.5px ${INK} !important; }
 `;
 
   const SKETCH_GEOMETRY = `
@@ -246,8 +244,8 @@ input, select, textarea, button {
 }
 /* Headings keep their weight so the page still has hierarchy once greeked. */
 .${TEXT}.${HEAD} { --wd-c: ${DARK}; }
-*::placeholder { color: transparent !important; -webkit-text-fill-color: transparent !important; }
-*::selection { background: transparent !important; color: transparent !important; }
+*${NOT_OWN}::placeholder { color: transparent !important; -webkit-text-fill-color: transparent !important; }
+*${NOT_OWN}::selection { background: transparent !important; color: transparent !important; }
 `;
 
   // --- Tagging pass ---------------------------------------------------------
@@ -267,9 +265,9 @@ input, select, textarea, button {
   ]);
   const SKIP = new Set(["SCRIPT", "STYLE", "LINK", "META", "TITLE", "HEAD", "NOSCRIPT"]);
 
-  const MIN_W = 40;
-  const MIN_H = 24;
-  const MIN_AREA = 2000;
+  const MIN_W = 100;
+  const MIN_H = 40;
+  const MIN_AREA = 25000;
   const MAX_BOXES = 1500; // guard against pathological pages
 
   // A rule, a divider or a 1px spacer is not structure. Anything this far from
@@ -286,11 +284,11 @@ input, select, textarea, button {
   // A box within this many px of its nearest boxed ancestor on all four edges
   // is that ancestor drawn twice. Exact-rect keying missed these because real
   // wrappers differ by a pixel or two of padding.
-  const NEST_TOL = 6;
+  const NEST_TOL = 30;
 
   // A child filling this much of its nearest boxed ancestor is that ancestor
   // with padding, not a second structure worth outlining.
-  const NEST_AREA_RATIO = 0.9;
+  const NEST_AREA_RATIO = 0.6;
 
   const ALL_CLASSES = [BOX, REL, TEXT, THIN, HEAD, ...VARIANT_CLASSES];
 
@@ -481,12 +479,12 @@ input, select, textarea, button {
 
   WD.register({
     name: "wireframe",
-    flags: { wireframe: false, greek: false, crisp: false },
+    flags: { wireframe: false, greek: false },
     active: (s) => s.wireframe || s.greek,
     css(state) {
       let out = "";
       if (state.wireframe) {
-        out += BASE_CSS + (state.crisp ? CRISP_CSS : SKETCH_GEOMETRY + sketchRules());
+        out += BASE_CSS + SKETCH_GEOMETRY + sketchRules();
       }
       if (state.greek) out += GREEK_CSS;
       return out;

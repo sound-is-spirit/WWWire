@@ -1,4 +1,4 @@
-// WireDrafter — background service worker (Manifest V3)
+// WireDrafter - background service worker (Manifest V3)
 //
 // Owns all state. The content script is a dumb renderer that does what this
 // worker tells it.
@@ -25,25 +25,43 @@ const TAB_KEY_PREFIX = "tab:";
 
 const tabKey = (tabId) => TAB_KEY_PREFIX + tabId;
 
+// Turning everything ON is the only state the worker has to spell out. OFF is
+// `{}`: the engine fills every registered module's declared default (all false)
+// via WD.apply, so the worker needs no vocabulary for it and a new module lands
+// without editing this file.
+const ON_STATE = { wireframe: true, greek: true };
+const OFF_STATE = {};
+
+// Derived, not enumerated, so this keeps working when a module adds a flag.
+const isOn = (s) => !!s && Object.values(s).some(Boolean);
+
 // --- Per-tab state ---------------------------------------------------------
 
-async function isTabEnabled(tabId) {
+async function getTabState(tabId) {
   try {
     const k = tabKey(tabId);
     const res = await chrome.storage.session.get(k);
-    return res[k] === true;
+    if (res[k] && typeof res[k] === "object") return res[k];
   } catch (e) {
-    return false;
+    /* ignore */
   }
+  return Object.assign({}, OFF_STATE);
 }
 
-async function setTabEnabled(tabId, enabled) {
+async function setTabState(tabId, stateObj) {
   try {
-    if (enabled) await chrome.storage.session.set({ [tabKey(tabId)]: true });
-    else await chrome.storage.session.remove(tabKey(tabId));
+    if (isOn(stateObj)) {
+      await chrome.storage.session.set({ [tabKey(tabId)]: stateObj });
+    } else {
+      await chrome.storage.session.remove(tabKey(tabId));
+    }
   } catch (e) {
     /* session storage unavailable; state degrades to per-invocation */
   }
+}
+
+async function isTabEnabled(tabId) {
+  return isOn(await getTabState(tabId));
 }
 
 // --- Toolbar icon ----------------------------------------------------------
@@ -118,7 +136,7 @@ async function refreshIcon(tabId, enabled) {
 // (a tab can navigate, or the worker can restart, at any time).
 // Order matters: engine.js defines window.__WD, and every feature module bails
 // out immediately if it is missing.
-const CONTENT_FILES = ["content/engine.js", "content/wireframe.js"];
+const CONTENT_FILES = ["content/engine.js", "content/wireframe.js", "content/toolbar.js"];
 
 async function injectInto(tabId) {
   await chrome.scripting.executeScript({
@@ -127,18 +145,15 @@ async function injectInto(tabId) {
   });
 }
 
-// The flags the modules declare. The worker does not interpret them; it stores
-// what the UI asked for and hands the object to the engine, which merges it over
-// whatever defaults its registered modules declared.
-const ON_STATE = { wireframe: true, greek: true, crisp: false };
-const OFF_STATE = { wireframe: false, greek: false, crisp: false };
-
-async function pushState(tabId, enabled) {
-  await injectInto(tabId);
+async function pushState(tabId, stateObj, { inject = true } = {}) {
+  // Injection is idempotent but not free: it re-executes every content file in
+  // every frame. Only the OFF -> ON edge actually needs it; a message that
+  // arrived from a content script proves one is already running.
+  if (inject) await injectInto(tabId);
   try {
     await chrome.tabs.sendMessage(tabId, {
       type: MSG_SET_STATE,
-      state: enabled ? ON_STATE : OFF_STATE
+      state: stateObj
     });
   } catch (e) {
     // Some frames legitimately have no listener (about:blank, sandboxed docs).
@@ -162,8 +177,16 @@ async function signalBlocked(tabId) {
   }
 }
 
+// Persist and reflect a state that has already been pushed to the page.
+async function applyTabState(tabId, stateObj) {
+  await Promise.all([
+    setTabState(tabId, stateObj),
+    refreshIcon(tabId, isOn(stateObj))
+  ]);
+}
+
 async function toggleTab(tabId) {
-  const next = !(await isTabEnabled(tabId));
+  const next = (await isTabEnabled(tabId)) ? OFF_STATE : ON_STATE;
   try {
     await pushState(tabId, next);
   } catch (e) {
@@ -172,8 +195,7 @@ async function toggleTab(tabId) {
     await signalBlocked(tabId);
     return;
   }
-  await setTabEnabled(tabId, next);
-  await refreshIcon(tabId, next);
+  await applyTabState(tabId, next);
 }
 
 // --- Lifecycle -------------------------------------------------------------
@@ -193,25 +215,53 @@ chrome.runtime.onInstalled.addListener(async () => {
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   if (changeInfo.status !== "loading") return;
   if (!(await isTabEnabled(tabId))) return;
-  await setTabEnabled(tabId, false);
-  await refreshIcon(tabId, false);
+  await applyTabState(tabId, OFF_STATE);
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-  setTabEnabled(tabId, false);
+  setTabState(tabId, OFF_STATE);
 });
 
-// Keyboard shortcut. Triggering a registered command grants activeTab for the
-// active tab, which is what makes the injection below permitted.
 chrome.commands.onCommand.addListener(async (command) => {
   if (command !== "toggle-draft") return;
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (tab && tab.id != null) await toggleTab(tab.id);
 });
 
-// Primary interaction: no popup yet (there is only one mode to toggle), so a
-// toolbar click toggles the active tab directly. The popup arrives with the
-// wireframe/edit mode switches.
-chrome.action.onClicked.addListener((tab) => {
-  if (tab && tab.id != null) toggleTab(tab.id);
+chrome.action.onClicked.addListener(async (tab) => {
+  if (tab && tab.id != null) await toggleTab(tab.id);
+});
+
+// Messages from the in-page toolbar. Writes are serialised per tab: two quick
+// checkbox clicks would otherwise both read the same snapshot and the second
+// would resurrect the flag the first cleared.
+const pending = new Map();
+
+function serialize(tabId, fn) {
+  const next = (pending.get(tabId) || Promise.resolve()).then(fn, fn);
+  pending.set(tabId, next.finally(() => {
+    if (pending.get(tabId) === next) pending.delete(tabId);
+  }));
+  return next;
+}
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (!msg || msg.type !== "wiredrafter:updateState") return;
+  // The sender's own tab id is authoritative; never trust a caller-supplied one.
+  const tabId = sender.tab && sender.tab.id;
+  if (tabId == null) return;
+
+  serialize(tabId, async () => {
+    const merged = Object.assign(await getTabState(tabId), msg.state);
+    try {
+      // No injection: this message came from a live content script.
+      await pushState(tabId, merged, { inject: false });
+      await applyTabState(tabId, merged);
+      sendResponse({ success: true });
+    } catch (e) {
+      await signalBlocked(tabId);
+      sendResponse({ success: false });
+    }
+  });
+  return true; // async
 });

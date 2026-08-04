@@ -29,20 +29,10 @@ text hidden inside encapsulated web-component **Shadow DOM** controls.
 The remaining layers, in build order. Design decisions behind these are recorded
 in the notes referenced below.
 
-1. **Structural layer.** Desaturate the page and draw the wireframe boxes into a
-   **single full-viewport overlay canvas**, with hand-drawn-looking edges from
-   seeded path jitter. Deliberately *not* per-element CSS borders or per-element
-   SVG filters: thousands of filter regions stall the compositor, and a
-   universal `position: relative` breaks real page layouts.
-2. **Node-selection heuristic.** Deciding *which* elements get boxed is the real
-   product problem. Boxing everything yields debug-outline noise, not a
-   wireframe. Needs block-level plus area threshold plus occlusion tests, with
-   landmark glyphs for images, video and form controls.
-3. **Edit mode.** Drag and delete arbitrary nodes. Pointer Events with
-   `setPointerCapture`, capture-phase listeners on `window`, `transform:
-   translate3d` for movement, and an undo stack (`{node, parent, nextSibling}`
-   plus Cmd+Z).
-4. **Export.** PNG and SVG out of the overlay canvas.
+1. ~~**Structural layer.**~~ **Done.** Desaturates the page and draws the wireframe boxes with hand-drawn-looking edges.
+2. ~~**Node-selection heuristic.**~~ **Done.** Intelligent filtering for outline generation.
+3. ~~**Edit mode.**~~ **Done.** Drag and delete arbitrary nodes. Undo stack plus Cmd+Z.
+4. **Export.** PNG and SVG out of the tagged boxes.
 5. ~~**Permission and state rework.**~~ **Done in v0.2.0.** See
    [Permission model](#permission-model).
 

@@ -6,6 +6,17 @@ WireDrafter is a new product built on the engine of
 [GreyOut](https://github.com/sound-is-spirit/GreyOut). Versioning restarts at
 `0.1.0`; the GreyOut history (up to 2.2.0) lives in that repository.
 
+## [0.3.0] Wireframe, Edit Mode, and Popup
+
+### Added
+- **Structural layer:** Desaturate the page, flatten media to grey plates, and draw hand-drawn-looking outlines on structural elements.
+- **Node-selection heuristic:** Intelligent filtering (block-level, area threshold, aspect ratio) prevents outline noise.
+- **Edit mode:** Drag and drop elements anywhere on the page, delete arbitrary nodes, and undo (Cmd/Ctrl+Z) deletions and moves.
+- **Popup UI:** Fine-grained toggle controls for Wireframe, Greek text, Crisp outlines, and Edit mode instead of a single toolbar toggle.
+
+### Changed
+- The toolbar icon click no longer toggles the extension on/off directly. Use the popup, or the `Ctrl/Cmd+Shift+Y` keyboard command.
+
 ## [0.2.0] Permission and state rework
 
 Roadmap item 5. The extension no longer runs everywhere by default.

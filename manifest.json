@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "WireDrafter",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Turn any website into an editable lo-fi wireframe. Strip the styling, sketch the structure, move and delete anything.",
   "permissions": ["storage", "activeTab", "scripting"],
   "background": {

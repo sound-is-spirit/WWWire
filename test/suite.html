@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>WireDrafter Tests</title>
+</head>
+<body>
+  <div id="test-output">Running tests...</div>
+  
+  <div id="fixture" style="width: 800px; height: 600px; position: relative;">
+    <!-- Some DOM to test against -->
+    <div id="static-box" style="width: 100px; height: 100px;">Box</div>
+    <div id="abs-box" style="position: absolute; width: 100px; height: 100px;">Abs Box</div>
+    <h1 id="heading">Heading</h1>
+    <p id="text">Some paragraph text.</p>
+    <div id="host-open"></div>
+    <div id="host-closed"></div>
+  </div>
+
+  <script>
+    const msgs = [];
+    const roots = new WeakMap();
+    
+    // Mock Chrome APIs
+    window.chrome = {
+      runtime: { 
+        onMessage: { addListener: f => msgs.push(f) },
+        sendMessage: msg => { /* mock for popup/edit messages */ }
+      },
+      dom: { openOrClosedShadowRoot: el => roots.get(el) || null }
+    };
+
+    // Setup shadow roots
+    const openRoot = document.getElementById("host-open").attachShadow({mode: "open"});
+    openRoot.innerHTML = `<div class="shadow-box" style="width: 50px; height: 50px;">Open</div>`;
+    
+    const closedRoot = document.getElementById("host-closed").attachShadow({mode: "closed"});
+    closedRoot.innerHTML = `<div class="shadow-box" style="width: 50px; height: 50px;">Closed</div>`;
+    // Register closed root in our mock WeakMap so chrome.dom.openOrClosedShadowRoot finds it
+    roots.set(document.getElementById("host-closed"), closedRoot);
+
+  </script>
+  
+  <script src="../content/engine.js"></script>
+  <script src="../content/wireframe.js"></script>
+<script src="../content/toolbar.js"></script>
+  
+  <script>
+    let passCount = 0;
+    let failCount = 0;
+    const output = [];
+
+    function assert(cond, msg) {
+      if (cond) {
+        passCount++;
+        output.push(`✅ ${msg}`);
+      } else {
+        failCount++;
+        output.push(`❌ ${msg}`);
+        console.error(`Assertion failed: ${msg}`);
+      }
+    }
+
+    async function runTests() {
+      // Helper to push state via mock
+      function setState(state) {
+        msgs.forEach(fn => fn({ type: "wiredrafter:setState", state }));
+      }
+      
+      const WD = window.__WD;
+      assert(!!WD, "Engine loaded globally");
+      assert(WD.modules.length === 2, "Wireframe and toolbar modules registered");
+      
+      // Test 1: Wireframe applies correctly
+      setState({ wireframe: true, greek: false });
+      
+      const staticBox = document.getElementById("static-box");
+      const absBox = document.getElementById("abs-box");
+      const heading = document.getElementById("heading");
+      
+      // Allow MutationObserver a moment if it did anything async, though engine applies synchronously first.
+      await new Promise(r => setTimeout(r, 50));
+      
+      assert(staticBox.classList.contains("wd-box"), "Static box gets wd-box");
+      assert(staticBox.classList.contains("wd-rel"), "Static box gets wd-rel");
+      assert(absBox.classList.contains("wd-box"), "Absolute box gets wd-box");
+      assert(!absBox.classList.contains("wd-rel"), "Absolute box avoids wd-rel (Specificity regression prevented)");
+      
+      // Test 2: Shadow root traversal
+      const closedInner = closedRoot.querySelector(".shadow-box");
+      assert(closedInner.classList.contains("wd-box"), "Closed shadow root traversed and tagged");
+      
+      // Test 3: Teardown
+      setState({ wireframe: false, greek: false });
+      assert(!staticBox.classList.contains("wd-box"), "Teardown clears wd-box");
+      assert(!absBox.classList.contains("wd-box"), "Teardown clears classes from abs-box");
+      assert(!closedInner.classList.contains("wd-box"), "Teardown clears shadow DOM classes");
+      
+      // Test 4: Greek text
+      setState({ wireframe: false, greek: true });
+      await new Promise(r => setTimeout(r, 50));
+      assert(heading.classList.contains("wd-text"), "Heading gets wd-text");
+      assert(heading.classList.contains("wd-head"), "Heading gets wd-head");
+      
+      // Test 5: the toolbar module registers and mounts in the top frame
+      assert(WD.modules.some(m => m.name === "toolbar"), "Toolbar module registered");
+      setState({ wireframe: true, greek: false });
+      await new Promise(r => setTimeout(r, 50));
+      const panel = document.querySelector(".wd-toolbar");
+      assert(!!panel, "Toolbar mounts while a renderer is active");
+      assert(WD.isOwnNode(panel), "Toolbar is claimed, so the renderer cannot repaint it");
+
+      // Test 6: re-injecting the toolbar must not stack a second one
+      const before = document.querySelectorAll(".wd-toolbar").length;
+      setState({ wireframe: true, greek: true });
+      await new Promise(r => setTimeout(r, 50));
+      assert(document.querySelectorAll(".wd-toolbar").length === before,
+             "Toggling does not append a second toolbar");
+
+      // Test 7: added elements are owned, so the tagging pass ignores them
+      const added = document.createElement("div");
+      WD.claim(added);
+      added.className = "wd-added";
+      added.textContent = "user content";
+      document.body.appendChild(added);
+      WD.invalidate();
+      await new Promise(r => setTimeout(r, 250));
+      assert(!added.classList.contains("wd-text"),
+             "Claimed user content is never greeked");
+      assert(!added.classList.contains("wd-box"),
+             "Claimed user content is never tagged as page structure");
+      added.remove();
+
+      // Test 8: everything unmounts
+      setState({ wireframe: false, greek: false });
+      await new Promise(r => setTimeout(r, 50));
+      assert(!document.querySelector(".wd-toolbar"), "Toolbar unmounts with the renderers");
+      assert(document.querySelectorAll("[data-wiredrafter]").length === 0,
+             "No extension nodes left behind");
+
+      // Render results
+      document.getElementById("test-output").innerHTML = `
+        <h2>Test Results</h2>
+        <p>${passCount} passed, ${failCount} failed.</p>
+        <pre>${output.join("\n")}</pre>
+      `;
+    }
+
+    runTests();
+  </script>
+</body>
+</html>

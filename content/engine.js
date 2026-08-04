@@ -1,4 +1,4 @@
-// WireDrafter — engine (shared plumbing for every content module).
+// WireDrafter - engine (shared plumbing for every content module).
 //
 // Injected on demand by the service worker, ISOLATED world only. This file owns
 // what every mode needs and nothing mode-specific:
@@ -61,13 +61,21 @@
     return el;
   };
 
+  // closest(), not hasAttribute(): only the root of an extension-created tree
+  // is claimed, and contenteditable generates children we never see (pressing
+  // Enter in a text box makes fresh <div>s). Those must count as owned too.
   WD.isOwnNode = function (el) {
     try {
-      return !!(el && el.nodeType === 1 && el.hasAttribute(MARK));
+      return !!(el && el.nodeType === 1 && el.closest("[" + MARK + "]"));
     } catch (e) {
       return false;
     }
   };
+
+  // The CSS counterpart of isOwnNode. The engine owns the marker name, so it
+  // owns the escape hatch; modules compose this instead of spelling the
+  // attribute out, which is how one rule block got missed.
+  WD.NOT_OWN = ":not([" + MARK + "], [" + MARK + "] *)";
 
   // --- Shadow DOM -----------------------------------------------------------
 
@@ -277,8 +285,26 @@
   }
 
   function moduleActive(m) {
-    return m.active ? !!m.active(WD.state) : false;
+    return m.active ? !!m.active(WD.state, m) : false;
   }
+
+  // "Is the extension doing anything to this page." Chrome modules (a toolbar,
+  // a HUD) have no flags of their own and want to appear whenever some renderer
+  // is running; without this they would have to hardcode another module's flag
+  // names, which is the coupling this engine exists to prevent.
+  //
+  // `except` is required, and the re-entrancy guard covers the case of two
+  // chrome modules each asking about the other.
+  let asking = false;
+  WD.anyActive = function (except) {
+    if (asking) return false;
+    asking = true;
+    try {
+      return WD.modules.some((m) => m !== except && moduleActive(m));
+    } finally {
+      asking = false;
+    }
+  };
 
   function isActive() {
     return WD.modules.some(moduleActive);
