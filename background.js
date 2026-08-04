@@ -90,8 +90,8 @@ async function refreshIcon(tabId, enabled) {
     : { tabId, path: INACTIVE_ICON_PATHS };
   
   const title = enabled
-    ? "PageWire: ON for this tab (click to turn off)"
-    : "PageWire: click to draft this tab";
+    ? "WWWire: ON for this tab (click to turn off)"
+    : "WWWire: click to draft this tab";
     
   // Independent calls, so they overlap instead of serialising.
   await Promise.all([
@@ -136,7 +136,7 @@ async function signalBlocked(tabId) {
   try {
     await chrome.action.setTitle({
       tabId,
-      title: "PageWire can't run on this page (Chrome restricts it)"
+      title: "WWWire can't run on this page (Chrome restricts it)"
     });
     await chrome.action.setBadgeText({ tabId, text: "!" });
     await chrome.action.setBadgeBackgroundColor({ tabId, color: "#5f6368" });
