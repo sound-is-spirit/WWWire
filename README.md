@@ -139,6 +139,12 @@ If a site comes out too sparse or too busy, these constants at the top of
 - `NEST_TOL`, `NEST_AREA_RATIO`: duplicate-box suppression, by pixel tolerance
   and by area ratio respectively. The second is what catches padding-only
   wrapper chains.
+- `MAX_DEPTH`: how many levels of nested outlines to draw. Counted in
+  outlines, not in markup, so a card inside a column inside a page is depth 2
+  however many wrapper divs sit between them.
+- `LEAF_KEEP`: what makes an innermost box worth drawing. A leaf holding a
+  thumbnail or a control is a component; a leaf holding only text is a
+  paragraph wrapper, and the grey bars already show it.
 - `MAX_BOXES`: pathological-page guard.
 - In `roughRectPath`: `j` (corner jitter) and `over` (corner overshoot, the
   strongest hand-drawn tell).

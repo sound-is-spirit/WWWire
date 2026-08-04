@@ -6,6 +6,22 @@ WireDrafter is a new product built on the engine of
 [GreyOut](https://github.com/sound-is-spirit/GreyOut). Versioning restarts at
 `0.1.0`; the GreyOut history (up to 2.2.0) lives in that repository.
 
+## [0.3.4] Declutter: drop innermost text-only boxes
+
+### Changed
+- **Leaf boxes that wrap nothing but text are no longer outlined.** Measured on
+  realistic pages, 6 of 10 outlines were exactly this: a paragraph or list item
+  in its own div. The grey bars already show that text, so the outline added an
+  edge without adding information and the result traced the DOM rather than
+  describing the layout. Box count on a search-results page fell from 10 to 4,
+  on a social feed from 8 to 6, with no loss of structure.
+- The outermost box is always kept, so a page never loses its frame, and a leaf
+  holding real content (thumbnail, form control) is kept because the outline is
+  the only thing marking it out. Both are tunable via `LEAF_KEEP`.
+- **Added `MAX_DEPTH`**, a cap on levels of nested outlines, counted in outlines
+  rather than in markup. Not binding on the pages measured (they reach depth 2)
+  but a guard for deeply nested applications.
+
 ## [0.3.3] Selection state for added elements
 
 ### Added

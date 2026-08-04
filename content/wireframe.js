@@ -311,6 +311,20 @@ input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
   // with padding, not a second structure worth outlining.
   const NEST_AREA_RATIO = 0.6;
 
+  // How many levels of BOXED nesting to draw. Counted in outlines, not in
+  // markup, so a card inside a column inside a page is depth 2 no matter how
+  // many wrapper divs sit between them. Real pages nest far deeper than a
+  // wireframe should show; past this the boxes stop describing structure and
+  // start tracing the DOM.
+  const MAX_DEPTH = 3;
+
+  // Content that makes a leaf box worth drawing. A leaf holding one of these is
+  // a real component (a thumbnail, a control); a leaf holding only text is a
+  // paragraph wrapper, and the grey bars already show it.
+  const LEAF_KEEP =
+    "img, video, canvas, svg, picture, iframe, object, embed," +
+    "input, button, select, textarea";
+
   const ALL_CLASSES = [BOX, REL, TEXT, THIN, HEAD, ICON, ...VARIANT_CLASSES];
 
   // The DOM is the source of truth for what we tagged, so there is no parallel
@@ -348,23 +362,25 @@ input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
     const texts = [];
     const icons = [];
     const seenRects = new Set();
-    const keptRects = new Map();
+    // element -> { rect, depth, hasChild }. Depth counts boxed ancestors, not
+    // DOM ancestors, so it measures visible nesting rather than markup nesting.
+    const kept = new Map();
     // One Range reused for every measurement rather than one per element.
     const textRange = document.createRange();
 
-    // Nearest already-boxed ancestor's rect, crossing shadow boundaries via the
-    // host. Walking up is O(depth), not another pass over the candidate list.
-    function boxedAncestorRect(el) {
+    // Nearest already-boxed ancestor, crossing shadow boundaries via the host.
+    // Walking up is O(depth), not another pass over the candidate list.
+    function boxedAncestor(el) {
       let node = el;
-      for (let hops = 0; hops < 14; hops++) {
+      for (let hops = 0; hops < 24; hops++) {
         let parent = node.parentElement;
         if (!parent) {
           const root = node.getRootNode && node.getRootNode();
           parent = root && root.host ? root.host : null;
         }
         if (!parent) return null;
-        const r = keptRects.get(parent);
-        if (r) return r;
+        const entry = kept.get(parent);
+        if (entry) return entry;
         node = parent;
       }
       return null;
@@ -456,24 +472,30 @@ input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
         Math.round(w) + "|" + Math.round(h);
       if (seenRects.has(key)) continue;
 
-      const near = boxedAncestorRect(el);
+      const near = boxedAncestor(el);
+      const depth = near ? near.depth + 1 : 0;
+      if (depth > MAX_DEPTH) continue;
       if (near) {
+        const nearRect = near.rect;
         const tight =
-          Math.abs(near.top - rect.top) <= NEST_TOL &&
-          Math.abs(near.left - rect.left) <= NEST_TOL &&
-          Math.abs(near.right - rect.right) <= NEST_TOL &&
-          Math.abs(near.bottom - rect.bottom) <= NEST_TOL;
+          Math.abs(nearRect.top - rect.top) <= NEST_TOL &&
+          Math.abs(nearRect.left - rect.left) <= NEST_TOL &&
+          Math.abs(nearRect.right - rect.right) <= NEST_TOL &&
+          Math.abs(nearRect.bottom - rect.bottom) <= NEST_TOL;
         // A fixed pixel tolerance cannot catch a padding-only wrapper: 16px of
         // padding is well past it, yet the two boxes are the same box to the
         // eye. Area ratio is scale-independent and does catch it.
-        const nearArea = near.width * near.height;
+        const nearArea = nearRect.width * nearRect.height;
         const filled = nearArea > 0 && (w * h) / nearArea > NEST_AREA_RATIO;
         if (tight || filled) continue;
       }
 
       seenRects.add(key);
-      keptRects.set(el, rect);
+      if (near) near.hasChild = true;
+      const entry = { rect, depth, hasChild: false };
+      kept.set(el, entry);
       boxes.push({
+        entry,
         el,
         isStatic: cs.position === "static",
         // Below the sketch-viable size the border-image would render as four
@@ -483,8 +505,21 @@ input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
       if (boxes.length >= MAX_BOXES) break;
     }
 
+    // Drop leaf boxes that wrap nothing but text. This is the single biggest
+    // source of clutter on a dense page: every paragraph and list item sits in
+    // its own div, and outlining each one traces the DOM rather than describing
+    // the layout. The outermost box is always kept so the page never loses its
+    // frame, and a leaf holding real content (see LEAF_KEEP) is kept because
+    // the outline is the only thing marking it out.
+    const drawn = boxes.filter(
+      (b) =>
+        b.entry.depth === 0 ||
+        b.entry.hasChild ||
+        b.el.querySelector(LEAF_KEEP) !== null
+    );
+
     // WRITE phase. No reads, so no interleaved style recalc.
-    boxes.forEach((b, i) => {
+    drawn.forEach((b, i) => {
       b.el.classList.add(BOX, VARIANT_CLASSES[i % VARIANT_CLASSES.length]);
       if (b.isStatic) b.el.classList.add(REL);
       if (b.thin) b.el.classList.add(THIN);

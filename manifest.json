@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "WireDrafter",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Turn any website into a lo-fi wireframe, then sketch on top of it with your own containers and text boxes.",
   "permissions": [
     "storage",
