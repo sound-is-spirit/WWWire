@@ -1,4 +1,4 @@
-# Chrome Web Store Listing: WireDrafter
+# Chrome Web Store Listing: WebWire
 
 > Last Updated: 2026-08-04
 >
@@ -9,30 +9,31 @@
 ## Store Listing
 
 **Extension Name** [REQUIRED]
-WireDrafter
+WebWire - Live Website Wireframes
 
 **Short Description** [REQUIRED]
-Turn any website into a lo-fi wireframe, then sketch on top of it with your own containers and text boxes.
+Turn any website into a lo-fi wireframe, then sketch on top of it with your own freehand drawings, containers, and text boxes.
 
 **Detailed Description** [REQUIRED]
-WireDrafter strips a live website down to its structure so you can see the layout instead of the design.
+WebWire strips a live website down to its structure so you can see the layout instead of the design.
 
 What it does:
 - Wireframe mode flattens the page to a high-contrast blueprint: white surfaces, black type, decoration removed, images and video collapsed to flat grey plates, and hand-drawn sketch outlines around the structural elements.
 - Grey bars replace the text with bars sized to the real copy, so you read rhythm and hierarchy instead of words. Headings stay heavier, so the hierarchy survives.
-- A floating toolbar lets you add your own containers and text boxes on top of the wireframe. Drag them, resize them from the corner, type into them, and delete them with the red x.
+- A floating toolbar lets you add your own containers, text boxes, and freehand drawings on top of the wireframe. 
+- Full keyboard support: Drag, resize, or delete elements with Backspace/Delete. Copy and paste them with Cmd+C/Cmd+V, and reverse any mistakes with the Cmd+Z Undo stack.
 
 Useful for exploring how an existing page is put together, presenting a simplified layout to stakeholders, or sketching a change directly over the real thing before anyone opens a design tool.
 
-Note: WireDrafter adds and edits its own elements. It does not move or delete the website's own content. Everything is temporary and lives only in the tab you turned it on in; reloading the page restores it completely.
+Note: WebWire adds and edits its own elements. It does not move or delete the website's own content. Everything is temporary and lives only in the tab you turned it on in; reloading the page restores it completely.
 
-Privacy: WireDrafter runs entirely on your device. It makes no network requests of any kind, collects nothing, and does nothing at all until you click the icon on a specific tab.
+Privacy: WebWire runs entirely on your device. It makes no network requests of any kind, collects nothing, and does nothing at all until you click the icon on a specific tab.
 
 **Category** [REQUIRED]
 Developer Tools
 
 **Single Purpose** [REQUIRED]
-Renders a live web page as a lo-fi wireframe and lets the user sketch additional layout elements on top of it.
+Renders a live web page as a lo-fi wireframe and lets the user draw and sketch additional layout elements on top of it.
 
 **Primary Language** [REQUIRED]
 English
@@ -51,8 +52,8 @@ English
 ### Screenshot Notes
 All three are buildable against the current build:
 - Screenshot 1: a content-heavy page before and after wireframe mode.
-- Screenshot 2: the floating toolbar panel, with Wireframe and Grey bars ticked.
-- Screenshot 3: an added Container and Text Box sitting on top of a wireframed page, with the delete button visible.
+- Screenshot 2: the floating toolbar panel, with Wireframe and Grey bars ticked, and a freehand drawing visible on the page.
+- Screenshot 3: an added Container and Text Box sitting on top of a wireframed page, demonstrating copy/paste and selection.
 
 ## Permissions Justification
 
@@ -105,8 +106,8 @@ tracking, or remote code of any kind.
 
 | Version | Date | Changes | Status |
 |---------|------|---------|--------|
-| 0.3.0 | 2026-08-04 | Wireframe renderer with sketch outlines and grey text bars; floating toolbar for adding containers and text boxes. | Draft |
-| 0.2.0 | | Dropped `<all_urls>` for activeTab; per-tab state. Not published. | |
+| 0.4.0 | 2026-08-04 | Added freehand drawing tool, copy/paste (Cmd+C/Cmd+V) keyboard shortcuts, and full Undo stack (Cmd+Z). | Draft |
+| 0.3.4 | 2026-08-04 | Wireframe renderer with sketch outlines and grey text bars; floating toolbar for adding containers and text boxes. | Unreleased |
 
 ## Review Notes
 

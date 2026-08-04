@@ -96,7 +96,7 @@
    with the drag handler for the same corner. */
 .${GRIP} {
   position: absolute; right: 0; bottom: 0; width: 14px; height: 14px;
-  background: #111; cursor: nwse-resize; z-index: 2147483647;
+  background: #111;    cursor: nwse-resize; z-index: 2147483647; pointer-events: auto;
 }
 .${TEXT} { padding: 8px; border-style: dashed; }
 .${INNER} {
@@ -108,7 +108,15 @@
   position: absolute; top: 0; right: 0; width: 22px; height: 22px;
   background: #111; color: #fff; -webkit-text-fill-color: #fff;
   font: 700 15px/22px system-ui, sans-serif; text-align: center;
-  cursor: pointer; z-index: 2147483647;
+  cursor: pointer; z-index: 2147483647; pointer-events: auto;
+}
+.wd-added-drawing {
+  background: transparent !important;
+  border: none !important;
+  pointer-events: none;
+}
+.wd-added-drawing.${SEL} {
+  outline: 1px dashed #111; outline-offset: 2px;
 }
 
 /* Handles are chrome, not content: on every box at once they are noise. They
@@ -132,6 +140,7 @@
     // pointerdown, so it wins before the drag logic on the ancestor.
     btn.addEventListener("pointerdown", (e) => {
       e.stopPropagation();
+      pushUndo({ type: "remove", el: el, parent: el.parentNode });
       el.remove();
     });
     el.appendChild(btn);
@@ -205,10 +214,16 @@
         select(el);
         w0 = el.offsetWidth;
         h0 = el.offsetHeight;
+        el.dataset.wdUndoCss = el.style.cssText;
       },
       move(dx, dy) {
         el.style.width = Math.max(40, w0 + dx) + "px";
         el.style.height = Math.max(24, h0 + dy) + "px";
+      },
+      end(moved) {
+        if (moved) {
+          pushUndo({ type: "move", el: el, prevCSS: el.dataset.wdUndoCss });
+        }
       }
     });
     el.appendChild(grip);
@@ -234,6 +249,100 @@
     select(null);
   }
 
+  let clipboardElement = null;
+  const undoStack = [];
+
+  function pushUndo(action) {
+    undoStack.push(action);
+    if (undoStack.length > 50) undoStack.shift();
+  }
+
+  function performUndo() {
+    const action = undoStack.pop();
+    if (!action) return;
+    
+    if (action.type === "add") {
+      if (action.el && action.el.parentNode) {
+        action.el.remove();
+        select(null);
+      }
+    } else if (action.type === "remove") {
+      if (action.el && action.parent) {
+        action.parent.appendChild(action.el);
+        select(action.el);
+      }
+    } else if (action.type === "move") {
+      if (action.el && action.prevCSS !== undefined) {
+        action.el.style.cssText = action.prevCSS;
+        select(action.el);
+      }
+    }
+  }
+
+  function onKeyDown(e) {
+    const isTyping = e.target.isContentEditable || e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA";
+
+    if (e.key === "Escape") {
+      if (isTyping && document.activeElement) document.activeElement.blur();
+      select(null);
+      return;
+    }
+
+    const selected = document.querySelector("." + ADDED + "." + SEL);
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+      if (isTyping) return;
+      performUndo();
+      e.preventDefault();
+      return;
+    }
+
+    if (e.key === "Backspace" || e.key === "Delete") {
+      if (isTyping) return;
+      if (selected) {
+        pushUndo({ type: "remove", el: selected, parent: selected.parentNode });
+        selected.remove();
+        e.preventDefault();
+      }
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") {
+      if (isTyping && window.getSelection().toString().length > 0) return;
+      if (selected) {
+        clipboardElement = selected;
+      }
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v") {
+      if (isTyping) return;
+      if (clipboardElement) {
+        const clone = clipboardElement.cloneNode(true);
+        
+        clone.classList.remove(ADDED, SEL);
+        clone.querySelectorAll("." + DEL + ", ." + GRIP).forEach(el => el.remove());
+        
+        const inner = clone.querySelector("." + INNER);
+        if (inner) {
+          inner.removeAttribute("contenteditable");
+          inner.addEventListener("blur", () => inner.removeAttribute("contenteditable"));
+        }
+        
+        const prevLeft = parseFloat(clipboardElement.style.left) || 0;
+        const prevTop = parseFloat(clipboardElement.style.top) || 0;
+        const newLeft = prevLeft + 20;
+        const newTop = prevTop + 20;
+        
+        const w = parseFloat(clipboardElement.style.width) || clipboardElement.offsetWidth;
+        const h = parseFloat(clipboardElement.style.height) || clipboardElement.offsetHeight;
+        
+        spawn(clone, w, h, newLeft, newTop);
+        select(clone);
+        
+        clipboardElement = clone;
+      }
+    }
+  }
+
   function makeDraggable(el) {
     let left0 = 0;
     let top0 = 0;
@@ -247,12 +356,16 @@
         select(el);
         left0 = parseFloat(el.style.left) || 0;
         top0 = parseFloat(el.style.top) || 0;
+        el.dataset.wdUndoCss = el.style.cssText;
       },
       move(dx, dy) {
         el.style.left = left0 + dx + "px";
         el.style.top = top0 + dy + "px";
       },
       end(moved) {
+        if (moved) {
+          pushUndo({ type: "move", el: el, prevCSS: el.dataset.wdUndoCss });
+        }
         if (moved || !el.classList.contains(TEXT)) return;
         const inner = el.querySelector("." + INNER);
         if (inner) {
@@ -266,25 +379,30 @@
   // Claimed at creation, so the engine's observer skips the insertion and no
   // rescan is scheduled: an absolutely-positioned box we own changes nothing
   // about how the page's own elements should be tagged.
-  function spawn(el, w, h) {
+  function spawn(el, w, h, forceLeft, forceTop) {
     WD.claim(el);
     el.classList.add(ADDED);
     el.style.width = w + "px";
-    el.style.left = window.scrollX + window.innerWidth / 2 - w / 2 + "px";
-    el.style.top = window.scrollY + window.innerHeight / 2 - h / 2 + "px";
+    if (forceLeft !== undefined) el.style.left = forceLeft + "px";
+    else el.style.left = window.scrollX + window.innerWidth / 2 - w / 2 + "px";
+    if (forceTop !== undefined) el.style.top = forceTop + "px";
+    else el.style.top = window.scrollY + window.innerHeight / 2 - h / 2 + "px";
     addDeleteButton(el);
     addResizeHandle(el);
     makeDraggable(el);
     document.body.appendChild(el);
+    pushUndo({ type: "add", el: el });
   }
 
   function addContainer() {
+    if (isDrawingMode) toggleDraw();
     const box = document.createElement("div");
     box.style.height = "200px";
     spawn(box, 200, 200);
   }
 
   function addTextBox() {
+    if (isDrawingMode) toggleDraw();
     const wrap = document.createElement("div");
     wrap.classList.add(TEXT);
     wrap.style.minHeight = "24px";
@@ -294,6 +412,155 @@
     inner.addEventListener("blur", () => inner.removeAttribute("contenteditable"));
     wrap.appendChild(inner);
     spawn(wrap, 200, 40);
+  }
+
+  // --- Drawing logic --------------------------------------------------------
+  let isDrawingMode = false;
+  let drawOverlay = null;
+  let drawBtn = null;
+
+  function stopDrawOverlay() {
+    if (drawOverlay) {
+      drawOverlay.remove();
+      drawOverlay = null;
+    }
+  }
+
+  function toggleDraw() {
+    isDrawingMode = !isDrawingMode;
+    if (drawBtn) drawBtn.textContent = isDrawingMode ? "Stop Drawing" : "Draw (Freehand)";
+    if (isDrawingMode) {
+      if (drawOverlay) return;
+      drawOverlay = WD.claim(document.createElement("div"));
+      drawOverlay.style.cssText = "position: fixed; inset: 0; z-index: 2147483647; cursor: crosshair; touch-action: none;";
+      
+      let currentPoints = [];
+      let tempSvg = null;
+      let tempPath = null;
+      
+      drawOverlay.addEventListener("pointerdown", (e) => {
+        if (e.button !== 0) return;
+        currentPoints = [{x: e.clientX, y: e.clientY}];
+        
+        tempSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        tempSvg.style.cssText = "position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;";
+        tempPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        tempPath.setAttribute("stroke", "#111");
+        tempPath.setAttribute("stroke-width", "4");
+        tempPath.setAttribute("fill", "none");
+        tempPath.setAttribute("stroke-linecap", "round");
+        tempPath.setAttribute("stroke-linejoin", "round");
+        
+        tempSvg.appendChild(tempPath);
+        drawOverlay.appendChild(tempSvg);
+        drawOverlay.setPointerCapture(e.pointerId);
+      });
+      
+      drawOverlay.addEventListener("pointermove", (e) => {
+        if (!currentPoints.length || !tempPath) return;
+        
+        const lastP = currentPoints[currentPoints.length - 1];
+        const dx = e.clientX - lastP.x;
+        const dy = e.clientY - lastP.y;
+        if (dx * dx + dy * dy < 64) return; // 8px distance threshold for much smoother curves
+
+        currentPoints.push({x: e.clientX, y: e.clientY});
+        
+        let d = `M ${currentPoints[0].x} ${currentPoints[0].y}`;
+        for (let i = 1; i < currentPoints.length - 1; i++) {
+          const xc = (currentPoints[i].x + currentPoints[i + 1].x) / 2;
+          const yc = (currentPoints[i].y + currentPoints[i + 1].y) / 2;
+          d += ` Q ${currentPoints[i].x} ${currentPoints[i].y}, ${xc} ${yc}`;
+        }
+        const last = currentPoints[currentPoints.length - 1];
+        d += ` L ${last.x} ${last.y}`;
+        tempPath.setAttribute("d", d);
+      });
+      
+      drawOverlay.addEventListener("pointerup", (e) => {
+        if (!currentPoints.length) return;
+        drawOverlay.releasePointerCapture(e.pointerId);
+        
+        finalizeDrawing(currentPoints);
+        
+        if (tempSvg) tempSvg.remove();
+        currentPoints = [];
+        tempSvg = null;
+        tempPath = null;
+      });
+      
+      if (host) {
+        document.body.insertBefore(drawOverlay, host);
+      } else {
+        document.body.appendChild(drawOverlay);
+      }
+    } else {
+      stopDrawOverlay();
+    }
+  }
+
+  function finalizeDrawing(points) {
+    if (points.length < 2) return;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    const pagePoints = points.map(p => {
+      const px = p.x + window.scrollX;
+      const py = p.y + window.scrollY;
+      if (px < minX) minX = px;
+      if (py < minY) minY = py;
+      if (px > maxX) maxX = px;
+      if (py > maxY) maxY = py;
+      return {x: px, y: py};
+    });
+    
+    const pad = 10;
+    minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+    const w = maxX - minX;
+    const h = maxY - minY;
+    if (w < 5 && h < 5) return; // skip tiny dots
+    
+    const wrap = document.createElement("div");
+    wrap.classList.add("wd-added-drawing");
+    WD.claim(wrap);
+    wrap.classList.add(ADDED);
+    wrap.style.width = w + "px";
+    wrap.style.height = h + "px";
+    wrap.style.left = minX + "px";
+    wrap.style.top = minY + "px";
+    
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", w);
+    svg.setAttribute("height", h);
+    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    svg.setAttribute("preserveAspectRatio", "none");
+    svg.style.cssText = "width: 100%; height: 100%; display: block; overflow: visible;";
+    
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("stroke", "#111");
+    path.setAttribute("stroke-width", "4");
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    path.style.cssText = "pointer-events: stroke;";
+    
+    let d = `M ${pagePoints[0].x - minX} ${pagePoints[0].y - minY}`;
+    for (let i = 1; i < pagePoints.length - 1; i++) {
+      const xc = (pagePoints[i].x + pagePoints[i + 1].x) / 2 - minX;
+      const yc = (pagePoints[i].y + pagePoints[i + 1].y) / 2 - minY;
+      const px = pagePoints[i].x - minX;
+      const py = pagePoints[i].y - minY;
+      d += ` Q ${px} ${py}, ${xc} ${yc}`;
+    }
+    const last = pagePoints[pagePoints.length - 1];
+    d += ` L ${last.x - minX} ${last.y - minY}`;
+    
+    path.setAttribute("d", d);
+    svg.appendChild(path);
+    wrap.appendChild(svg);
+    
+    addDeleteButton(wrap);
+    addResizeHandle(wrap);
+    makeDraggable(wrap);
+    document.body.appendChild(wrap);
   }
 
   // --- Panel ----------------------------------------------------------------
@@ -361,6 +628,9 @@
     add.appendChild(heading("Add Element", "(Click to add)"));
     add.appendChild(button("Container", addContainer));
     add.appendChild(button("Text Box", addTextBox));
+    
+    drawBtn = button("Draw (Freehand)", toggleDraw);
+    add.appendChild(drawBtn);
 
     panel.appendChild(modes);
     panel.appendChild(add);
@@ -388,15 +658,20 @@
         capture: true,
         passive: true
       });
+      window.addEventListener("keydown", onKeyDown);
     },
     update(state) {
       updateUI(state);
     },
     unmount() {
       window.removeEventListener("pointerdown", onDocPointerDown, true);
+      window.removeEventListener("keydown", onKeyDown);
       if (host) host.remove();
+      stopDrawOverlay();
       host = null;
       panel = null;
+      isDrawingMode = false;
+      drawBtn = null;
     }
   });
 })();
