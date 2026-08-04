@@ -372,14 +372,29 @@
         if (moved) {
           pushUndo({ type: "move", el: el, prevCSS: el.dataset.wdUndoCss });
         }
-        if (moved || !el.classList.contains(TEXT)) return;
+      }
+    });
+
+    if (el.classList.contains(TEXT)) {
+      el.addEventListener("dblclick", (e) => {
+        e.stopPropagation();
         const inner = el.querySelector("." + INNER);
         if (inner) {
           inner.setAttribute("contenteditable", "true");
           inner.focus();
+          
+          // Move cursor to end of text
+          const range = document.createRange();
+          range.selectNodeContents(inner);
+          range.collapse(false);
+          const sel = window.getSelection();
+          if (sel) {
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
         }
-      }
-    });
+      });
+    }
   }
 
   // Claimed at creation, so the engine's observer skips the insertion and no
