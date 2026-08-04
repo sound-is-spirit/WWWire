@@ -12,9 +12,13 @@
 //      keeps clearTags() from stripping their classes. Without it each of
 //      those has to be patched separately, with inline !important and with the
 //      wireframe module hardcoding this module's class names.
-//   2. Styling lives in the css() hook, not in inline cssText. The engine
-//      already concatenates module CSS and mirrors it into every root, and a
-//      stylesheet rule needs no !important to beat nothing.
+//   2. The panel lives in a CLOSED SHADOW ROOT. It sits in the host page's
+//      DOM, so without a boundary the page's own CSS reaches it: LinkedIn was
+//      enough to render the buttons' label invisible against their own
+//      background. Inline !important would only restart that arms race, and it
+//      loses to a host rule that also uses !important. A shadow root ends both
+//      directions structurally. The engine skips roots it owns, so the
+//      renderer's stylesheet is never mirrored inside.
 
 (function () {
   "use strict";
@@ -40,19 +44,25 @@
   const INNER = "wd-text-inner";
   const DEL = "wd-del";
 
-  let panel = null;
+  let host = null;   // claimed element in the page, the shadow boundary
+  let panel = null;  // the actual UI, inside the shadow root
 
   // --- Styles ---------------------------------------------------------------
   // Scoped under [data-wiredrafter], which the engine stamps via WD.claim, so
   // these rules can never touch the host page.
 
-  const CSS = `
+  // Panel styling: goes inside the shadow root only, so nothing here can leak
+  // into the page and nothing in the page can reach it.
+  const PANEL_CSS = `
 .${PANEL} {
   position: fixed; top: 20px; right: 20px; z-index: 2147483647;
   width: 150px; padding: 12px; box-sizing: border-box;
   display: flex; flex-direction: column; gap: 12px;
   background: #fff; border: 2px solid #111; color: #111;
   font: 14px/1.4 system-ui, sans-serif;
+  /* Belt and braces: a host page cannot reach in here, but the shadow root
+     inherits a few properties from the host element regardless. */
+  -webkit-text-fill-color: #111;
 }
 .${PANEL} h2 { font-size: 14px; font-weight: 700; margin: 0 0 8px; }
 .${PANEL} label {
@@ -62,13 +72,18 @@
 .${PANEL} section + section { border-top: 1px solid #ddd; padding-top: 12px; }
 .${PANEL} .hint { font-weight: 400; font-size: 0.85em; color: #666; }
 .${BTN} {
-  display: block; width: 100%; padding: 6px; margin-bottom: 6px;
+  display: block; width: 100%; padding: 6px;
+  -webkit-text-fill-color: #fff; margin-bottom: 6px;
   background: #111; color: #fff; border: 1px solid #111;
   font: 700 14px/1.2 system-ui, sans-serif; text-align: center; cursor: pointer;
 }
 .${BTN}:last-child { margin-bottom: 0; }
 
-.${ADDED} {
+`;
+
+  // Added-element styling: these live in the page's light DOM, so they go
+  // through the module css() hook the engine injects and mirrors.
+  const ADDED_CSS = `.${ADDED} {
   position: absolute; z-index: 2147483646;
   box-sizing: border-box; resize: both; overflow: hidden;
   background: rgba(0, 0, 0, 0.05); cursor: move;
@@ -243,8 +258,15 @@
   }
 
   function createToolbar(state) {
-    if (panel) return;
-    panel = WD.claim(el("div", PANEL));
+    if (host) return;
+    host = WD.claim(document.createElement("div"));
+    // Closed: nothing in the page can reach in, not even via .shadowRoot.
+    const root = host.attachShadow({ mode: "closed" });
+    const sheet = document.createElement("style");
+    sheet.textContent = PANEL_CSS;
+    root.appendChild(sheet);
+
+    panel = el("div", PANEL);
 
     const modes = el("section");
     modes.appendChild(heading("Modes"));
@@ -277,7 +299,8 @@
 
     panel.appendChild(modes);
     panel.appendChild(add);
-    document.body.appendChild(panel);
+    root.appendChild(panel);
+    document.body.appendChild(host);
   }
 
   function updateUI(state) {
@@ -293,7 +316,7 @@
     // so it asks the engine whether anything is active rather than naming
     // another module's flags.
     active: (s, self) => WD.anyActive(self),
-    css: () => CSS,
+    css: () => ADDED_CSS,
     mount(state) {
       createToolbar(state);
     },
@@ -301,7 +324,8 @@
       updateUI(state);
     },
     unmount() {
-      if (panel) panel.remove();
+      if (host) host.remove();
+      host = null;
       panel = null;
     }
   });

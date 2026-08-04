@@ -6,6 +6,23 @@ WireDrafter is a new product built on the engine of
 [GreyOut](https://github.com/sound-is-spirit/GreyOut). Versioning restarts at
 `0.1.0`; the GreyOut history (up to 2.2.0) lives in that repository.
 
+## [0.3.1] Toolbar isolation and icon clutter
+
+### Fixed
+- **The toolbar's buttons rendered black on black on some sites.** The panel
+  lives in the host page's DOM, so the page's own CSS could reach it. It is now
+  behind a **closed shadow root**, which ends that in both directions
+  structurally. Inline `!important` would only have restarted the arms race and
+  loses to a host rule that also uses `!important`.
+- **`WD.roots()` no longer descends into shadow roots the extension owns**, so
+  the renderer's stylesheet is never mirrored inside the toolbar.
+
+### Changed
+- **Small media renders as a light icon rather than a dark plate.** An avatar or
+  a nav glyph at the same 50% grey as a photograph turned dense pages into a
+  field of identical dark squares. Media under `ICON_MAX` in either axis is
+  lifted toward the paper and is no longer outlined.
+
 ## [0.3.0] Wireframe renderer and floating toolbar
 
 ### Added

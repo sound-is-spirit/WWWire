@@ -38,6 +38,7 @@
   const TEXT = "wd-text";
   const THIN = "wd-thin";
   const HEAD = "wd-head";
+  const ICON = "wd-icon";
 
   const INK = "#111111";
   const PAPER = "#ffffff";
@@ -164,6 +165,21 @@ iframe${NOT_OWN}, object${NOT_OWN}, embed${NOT_OWN} {
   opacity: 1 !important;
 }
 
+/* An avatar or a nav icon is not content. Left at the same 50% grey as a real
+   photograph, a page like a social feed turns into a field of identical dark
+   squares. brightness() lifts them toward the paper so they read as marks
+   rather than as blocks. */
+/* The tag and NOT_OWN prefix are load-bearing, not decoration. The :not()
+   pseudo-class takes the specificity of its most specific argument, so the
+   generic media rule above scores (0,1,1) and would beat a bare .wd-icon
+   class selector at (0,1,0). */
+img${NOT_OWN}.${ICON}, video${NOT_OWN}.${ICON}, canvas${NOT_OWN}.${ICON},
+svg${NOT_OWN}.${ICON}, picture${NOT_OWN}.${ICON}, iframe${NOT_OWN}.${ICON},
+object${NOT_OWN}.${ICON}, embed${NOT_OWN}.${ICON} {
+  filter: grayscale(1) contrast(0) brightness(1.5) !important;
+  background-color: transparent !important;
+}
+
 input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
   background-color: ${PAPER} !important;
   color: ${INK} !important;
@@ -270,6 +286,11 @@ input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
   const MIN_AREA = 25000;
   const MAX_BOXES = 1500; // guard against pathological pages
 
+  // Media smaller than this in either axis is an icon or an avatar. It is
+  // rendered lighter and never outlined, which is most of the difference
+  // between a wireframe and a field of grey squares on a dense page.
+  const ICON_MAX = 56;
+
   // A rule, a divider or a 1px spacer is not structure. Anything this far from
   // square is a line pretending to be a box.
   const MAX_ASPECT = 25;
@@ -290,13 +311,13 @@ input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
   // with padding, not a second structure worth outlining.
   const NEST_AREA_RATIO = 0.6;
 
-  const ALL_CLASSES = [BOX, REL, TEXT, THIN, HEAD, ...VARIANT_CLASSES];
+  const ALL_CLASSES = [BOX, REL, TEXT, THIN, HEAD, ICON, ...VARIANT_CLASSES];
 
   // The DOM is the source of truth for what we tagged, so there is no parallel
   // array to keep in sync and nothing pinning up to 1500 detached nodes alive
   // between passes.
   function clearTags() {
-    for (const el of WD.queryAll("." + BOX + ", ." + TEXT)) {
+    for (const el of WD.queryAll("." + BOX + ", ." + TEXT + ", ." + ICON)) {
       try {
         el.classList.remove(...ALL_CLASSES);
         el.style.removeProperty("--wd-lh");
@@ -325,6 +346,7 @@ input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
     // next phase would force a style recalc per element.
     const boxes = [];
     const texts = [];
+    const icons = [];
     const seenRects = new Set();
     const keptRects = new Map();
     // One Range reused for every measurement rather than one per element.
@@ -366,6 +388,12 @@ input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
       const media = MEDIA_TAGS.has(el.tagName);
       const w = rect.width;
       const h = rect.height;
+      // Small media is an icon or an avatar: tag it light and stop. This has to
+      // happen before the size floors below, which would otherwise drop it.
+      if (media && (w < ICON_MAX || h < ICON_MAX)) {
+        if (w >= 4 && h >= 4) icons.push(el);
+        continue;
+      }
       const bigEnough = media
         ? w >= 8 && h >= 8
         : w >= MIN_W &&
@@ -461,6 +489,14 @@ input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
       if (b.isStatic) b.el.classList.add(REL);
       if (b.thin) b.el.classList.add(THIN);
     });
+
+    for (const i of icons) {
+      try {
+        i.classList.add(ICON);
+      } catch (e) {
+        /* node gone */
+      }
+    }
 
     for (const t of texts) {
       try {

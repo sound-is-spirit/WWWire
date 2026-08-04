@@ -110,6 +110,10 @@
       return;
     }
     for (const el of els) {
+      // Never descend into a shadow root the extension owns. Mirroring the
+      // renderer's stylesheet into our own UI would defeat the point of putting
+      // it behind a shadow boundary in the first place.
+      if (WD.isOwnNode(el)) continue;
       const root = shadowRootOf(el);
       if (root) {
         visit(root);

@@ -63,12 +63,15 @@ check("re-injection registers no extra modules", ev("window.__WD.modules.length"
 print("\n-- toolbar mount --")
 ev("window.__send({wireframe:true, greek:true}), 'on'")
 time.sleep(0.6)
-check("toolbar mounted via anyActive", ev("document.querySelectorAll('.wd-toolbar').length") == 1,
-      ev("document.querySelectorAll('.wd-toolbar').length"))
-check("toolbar is claimed",
-      ev("window.__WD.isOwnNode(document.querySelector('.wd-toolbar'))"))
-check("toolbar styled from css() hook, not inline",
-      ev("!document.querySelector('.wd-toolbar').getAttribute('style')"))
+HOST = "body > div[data-wiredrafter]"
+check("toolbar mounted via anyActive", ev(f"document.querySelectorAll('{HOST}').length") == 1,
+      ev(f"document.querySelectorAll('{HOST}').length"))
+check("toolbar host is claimed", ev(f"window.__WD.isOwnNode(document.querySelector('{HOST}'))"))
+check("toolbar is behind a CLOSED shadow root (page cannot reach in)",
+      ev(f"document.querySelector('{HOST}').shadowRoot === null"))
+check("panel is not in the light DOM", ev("document.querySelectorAll('.wd-toolbar').length") == 0)
+check("toolbar carries no inline style",
+      ev(f"!document.querySelector('{HOST}').getAttribute('style')"))
 check("no !important in toolbar CSS",
       not any("!important" in l for l in src["toolbar.js"].splitlines()
               if not l.strip().startswith("//")))
@@ -80,8 +83,8 @@ for _ in range(3):
     ev("window.__send({wireframe:true, greek:true}), 'x'")
     time.sleep(0.15)
 check("still exactly one toolbar after 6 state pushes",
-      ev("document.querySelectorAll('.wd-toolbar').length") == 1,
-      ev("document.querySelectorAll('.wd-toolbar').length"))
+      ev(f"document.querySelectorAll('{HOST}').length") == 1,
+      ev(f"document.querySelectorAll('{HOST}').length"))
 
 print("\n-- ownership protects added elements --")
 ev("""
@@ -108,14 +111,14 @@ check("contenteditable-generated child also protected",
         return window.__WD.isOwnNode(d);
       })()"""))
 css = ev("document.querySelector('style[data-wiredrafter]').textContent")
-check("media rule now carries the ownership exclusion",
-      "img:not([data-wiredrafter]" in css)
+check("media rule carries the ownership exclusion", "img:not([data-wiredrafter]" in css)
+check("small media render as light icons, not dark plates", ".wd-icon" in css)
 
 print("\n-- teardown --")
 ev("document.getElementById('probe-added').remove(); 'rm'")
 ev("window.__send({wireframe:false, greek:false}), 'off'")
 time.sleep(0.5)
-check("toolbar unmounts", ev("document.querySelectorAll('.wd-toolbar').length") == 0)
+check("toolbar unmounts", ev(f"document.querySelectorAll('{HOST}').length") == 0)
 check("no extension nodes left", ev("document.querySelectorAll('[data-wiredrafter]').length") == 0,
       ev("document.querySelectorAll('[data-wiredrafter]').length"))
 
