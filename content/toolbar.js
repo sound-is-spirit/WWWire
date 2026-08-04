@@ -324,7 +324,13 @@
         const inner = clone.querySelector("." + INNER);
         if (inner) {
           inner.removeAttribute("contenteditable");
-          inner.addEventListener("blur", () => inner.removeAttribute("contenteditable"));
+          inner.addEventListener("focus", () => {
+            if (inner.textContent === "New Text Box") inner.textContent = "";
+          });
+          inner.addEventListener("blur", () => {
+            inner.removeAttribute("contenteditable");
+            if (inner.textContent.trim() === "") inner.textContent = "New Text Box";
+          });
         }
         
         const prevLeft = parseFloat(clipboardElement.style.left) || 0;
@@ -409,7 +415,17 @@
     const inner = document.createElement("div");
     inner.className = INNER;
     inner.textContent = "New Text Box";
-    inner.addEventListener("blur", () => inner.removeAttribute("contenteditable"));
+    inner.addEventListener("focus", () => {
+      if (inner.textContent === "New Text Box") {
+        inner.textContent = "";
+      }
+    });
+    inner.addEventListener("blur", () => {
+      inner.removeAttribute("contenteditable");
+      if (inner.textContent.trim() === "") {
+        inner.textContent = "New Text Box";
+      }
+    });
     wrap.appendChild(inner);
     spawn(wrap, 200, 40);
   }
