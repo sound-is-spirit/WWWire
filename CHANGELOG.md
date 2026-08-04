@@ -6,6 +6,28 @@ WireDrafter is a new product built on the engine of
 [GreyOut](https://github.com/sound-is-spirit/GreyOut). Versioning restarts at
 `0.1.0`; the GreyOut history (up to 2.2.0) lives in that repository.
 
+## [0.3.2] Added elements: resize, contrast, handle visibility
+
+### Fixed
+- **Added elements could be moved but not resized.** They relied on the CSS
+  `resize` property, whose gripper Chrome draws inside the padding box. The
+  drag handler's guard tested the content box instead, which never matched, so
+  `preventDefault()` ran on every corner press and killed the resize before it
+  started. Replaced with an explicit gripper of our own, which also removes an
+  OS-styled widget that did not belong in a black-and-white wireframe.
+- **The delete button and gripper appeared only after the element was clicked.**
+  `will-change: left, top` was set on pointerdown. Neither property is
+  compositable, so the hint bought nothing and only promoted the element to a
+  fresh layer at click time; that repaint was what made the corners show up.
+  Removed.
+
+### Changed
+- **Added containers and text boxes are black and white**, matching the
+  wireframe: white fill, black border, black corner handles. They were a grey
+  wash with a red delete button.
+- Move and resize now share one pointer-drag helper (pointer capture, one write
+  per frame, listeners scoped to the gesture, survives `pointercancel`).
+
 ## [0.3.1] Toolbar isolation and icon clutter
 
 ### Fixed

@@ -43,6 +43,7 @@
   const TEXT = "wd-added-text";
   const INNER = "wd-text-inner";
   const DEL = "wd-del";
+  const GRIP = "wd-grip";
 
   let host = null;   // claimed element in the page, the shadow boundary
   let panel = null;  // the actual UI, inside the shadow root
@@ -85,19 +86,27 @@
   // through the module css() hook the engine injects and mirrors.
   const ADDED_CSS = `.${ADDED} {
   position: absolute; z-index: 2147483646;
-  box-sizing: border-box; resize: both; overflow: hidden;
-  background: rgba(0, 0, 0, 0.05); cursor: move;
+  box-sizing: border-box; overflow: hidden;
+  background: #fff; color: #111; cursor: move;
+  border: 1px solid #111;
 }
-.${ADDED}:not(.${TEXT}) { outline: 1px solid #111; }
-.${TEXT} { padding: 8px; border: 1px dashed #666; }
+/* Our own gripper rather than the CSS resize property. The native one paints an OS
+   widget that does not belong in a black-and-white wireframe, and it competes
+   with the drag handler for the same corner. */
+.${GRIP} {
+  position: absolute; right: 0; bottom: 0; width: 14px; height: 14px;
+  background: #111; cursor: nwse-resize; z-index: 2147483647;
+}
+.${TEXT} { padding: 8px; border-style: dashed; }
 .${INNER} {
   width: 100%; height: 100%; min-height: 20px; outline: none;
-  color: #111; caret-color: #0a84ff;
+  color: #111; -webkit-text-fill-color: #111; caret-color: #111;
+  font: 14px/1.5 system-ui, sans-serif;
 }
 .${DEL} {
-  position: absolute; top: 0; right: 0; width: 24px; height: 24px;
-  background: #ff3b30; color: #fff; border-radius: 0 0 0 4px;
-  font: 700 16px/24px system-ui, sans-serif; text-align: center;
+  position: absolute; top: 0; right: 0; width: 22px; height: 22px;
+  background: #111; color: #fff; -webkit-text-fill-color: #fff;
+  font: 700 15px/22px system-ui, sans-serif; text-align: center;
   cursor: pointer; z-index: 2147483647;
 }
 `;
@@ -117,85 +126,111 @@
     el.appendChild(btn);
   }
 
-  function makeDraggable(el) {
-    let pointerId = null;
-    let startX = 0;
-    let startY = 0;
-    let baseLeft = 0;
-    let baseTop = 0;
+  // One pointer-drag helper for both moving and resizing: capture the pointer,
+  // coalesce writes to one per frame, tear the listeners down on release, and
+  // survive a cancelled gesture.
+  function onDrag(handle, opts) {
+    let id = null;
+    let x0 = 0;
+    let y0 = 0;
     let frame = 0;
     let pending = null;
 
     function flush() {
       frame = 0;
-      if (!pending) return;
-      el.style.left = pending.x + "px";
-      el.style.top = pending.y + "px";
+      if (pending) opts.move(pending.dx, pending.dy);
       pending = null;
     }
 
     function onMove(e) {
-      pending = {
-        x: baseLeft + (e.clientX - startX),
-        y: baseTop + (e.clientY - startY)
-      };
-      // Coalesce to one write per frame rather than one per event.
+      pending = { dx: e.clientX - x0, dy: e.clientY - y0 };
       if (!frame) frame = requestAnimationFrame(flush);
     }
 
     function stop(e) {
-      if (pointerId === null) return;
-      const moved =
-        Math.abs(e.clientX - startX) > 2 || Math.abs(e.clientY - startY) > 2;
+      if (id === null) return;
       try {
-        el.releasePointerCapture(pointerId);
+        handle.releasePointerCapture(id);
       } catch (err) {
         // Already released, e.g. the gesture was cancelled. Throwing here would
-        // abort the rest of this handler and the click-to-edit below with it.
+        // abort the rest of this handler.
       }
-      pointerId = null;
+      id = null;
       if (frame) {
         cancelAnimationFrame(frame);
         flush();
       }
-      // Listeners live only for the duration of a drag: 20 added boxes would
-      // otherwise keep 40 idle pointer listeners firing on every mouse move.
-      el.removeEventListener("pointermove", onMove);
-      el.removeEventListener("pointerup", stop);
-      el.removeEventListener("pointercancel", stop);
-      el.style.removeProperty("will-change");
+      handle.removeEventListener("pointermove", onMove);
+      handle.removeEventListener("pointerup", stop);
+      handle.removeEventListener("pointercancel", stop);
+      if (opts.end) {
+        opts.end(Math.abs(e.clientX - x0) > 2 || Math.abs(e.clientY - y0) > 2);
+      }
+    }
 
-      if (!moved && el.classList.contains(TEXT)) {
+    handle.addEventListener("pointerdown", (e) => {
+      if (opts.ignore && opts.ignore(e)) return;
+      id = e.pointerId;
+      x0 = e.clientX;
+      y0 = e.clientY;
+      handle.setPointerCapture(id);
+      opts.start();
+      handle.addEventListener("pointermove", onMove);
+      handle.addEventListener("pointerup", stop);
+      handle.addEventListener("pointercancel", stop);
+      e.stopPropagation();
+      e.preventDefault();
+    });
+  }
+
+  function addResizeHandle(el) {
+    const grip = WD.claim(document.createElement("div"));
+    grip.className = GRIP;
+    grip.dataset.wdGrip = "1";
+    let w0 = 0;
+    let h0 = 0;
+    onDrag(grip, {
+      start() {
+        w0 = el.offsetWidth;
+        h0 = el.offsetHeight;
+      },
+      move(dx, dy) {
+        el.style.width = Math.max(40, w0 + dx) + "px";
+        el.style.height = Math.max(24, h0 + dy) + "px";
+      }
+    });
+    el.appendChild(grip);
+  }
+
+  // Deliberately no `will-change` here. left/top are not compositable, so the
+  // hint buys nothing, and setting it on pointerdown promotes the element to a
+  // fresh layer at click time. That repaint is what made the delete button and
+  // the gripper appear only once the element had been clicked.
+  function makeDraggable(el) {
+    let left0 = 0;
+    let top0 = 0;
+    onDrag(el, {
+      ignore: (e) =>
+        // The delete button and the gripper own their own corners, and native
+        // text editing owns anything inside a contenteditable region.
+        (e.target.dataset && (e.target.dataset.wdDelete || e.target.dataset.wdGrip)) ||
+        e.target.isContentEditable,
+      start() {
+        left0 = parseFloat(el.style.left) || 0;
+        top0 = parseFloat(el.style.top) || 0;
+      },
+      move(dx, dy) {
+        el.style.left = left0 + dx + "px";
+        el.style.top = top0 + dy + "px";
+      },
+      end(moved) {
+        if (moved || !el.classList.contains(TEXT)) return;
         const inner = el.querySelector("." + INNER);
         if (inner) {
           inner.setAttribute("contenteditable", "true");
           inner.focus();
         }
       }
-    }
-
-    el.addEventListener("pointerdown", (e) => {
-      if (e.target.dataset && e.target.dataset.wdDelete) return;
-      // isContentEditable is the computed, inherited property, so it is already
-      // true for every node inside an editable region. It also covers
-      // contenteditable="" and "plaintext-only", which an attribute selector
-      // would miss.
-      if (e.target.isContentEditable) return;
-      // The native resize gripper lives outside the content box.
-      if (e.offsetX > el.clientWidth || e.offsetY > el.clientHeight) return;
-
-      pointerId = e.pointerId;
-      startX = e.clientX;
-      startY = e.clientY;
-      baseLeft = parseFloat(el.style.left) || 0;
-      baseTop = parseFloat(el.style.top) || 0;
-      el.setPointerCapture(pointerId);
-      el.style.willChange = "left, top";
-      el.addEventListener("pointermove", onMove);
-      el.addEventListener("pointerup", stop);
-      el.addEventListener("pointercancel", stop);
-      e.stopPropagation();
-      e.preventDefault();
     });
   }
 
@@ -209,6 +244,7 @@
     el.style.left = window.scrollX + window.innerWidth / 2 - w / 2 + "px";
     el.style.top = window.scrollY + window.innerHeight / 2 - h / 2 + "px";
     addDeleteButton(el);
+    addResizeHandle(el);
     makeDraggable(el);
     document.body.appendChild(el);
   }
