@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "WebWire - Live Website Wireframes",
-  "short_name": "WebWire",
+  "name": "PageWire - Live Website Wireframes",
+  "short_name": "PageWire",
   "version": "0.4.0",
   "description": "Turn any website into a lo-fi wireframe, then sketch on top of it with your own containers and text boxes.",
   "permissions": [

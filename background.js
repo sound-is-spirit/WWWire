@@ -70,58 +70,29 @@ async function isTabEnabled(tabId) {
 // chip. So "this tab looks different" reads directly as "this tab is drafted",
 // which the old global ON/OFF chip could not express once state went per-tab.
 
-function makeOnIcon(size) {
-  const canvas = new OffscreenCanvas(size, size);
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, size, size);
-
-  const mx = Math.max(1, Math.round(size * 0.02));
-  const boxH = Math.round(size * 0.72);
-  const boxY = Math.round((size - boxH) / 2);
-  const boxW = size - 2 * mx;
-  ctx.fillStyle = "#34a853";
-  ctx.fillRect(mx, boxY, boxW, boxH);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  let fs = Math.round(boxH * 0.74);
-  for (; fs > 4; fs--) {
-    ctx.font = "bold " + fs + "px Arial, Helvetica, sans-serif";
-    if (ctx.measureText("ON").width <= boxW * 0.84) break;
-  }
-  ctx.font = "bold " + fs + "px Arial, Helvetica, sans-serif";
-  ctx.fillText("ON", size / 2, Math.round(size / 2 + size * 0.04));
-
-  return ctx.getImageData(0, 0, size, size);
-}
-
-const DEFAULT_ICON_PATHS = {
-  16: "icons/bar16.png",
-  32: "icons/bar32.png",
-  48: "icons/bar48.png",
-  128: "icons/bar128.png"
+const ACTIVE_ICON_PATHS = {
+  16: "icons/active16.png",
+  32: "icons/active32.png",
+  48: "icons/active48.png",
+  128: "icons/active128.png"
 };
 
-// The ON chip is deterministic, so it is rasterised once per worker lifetime
-// rather than on every toggle (3 OffscreenCanvas allocations plus a font-fitting
-// measureText loop each time).
-let onIconData = null;
-function onIcon() {
-  if (!onIconData) {
-    onIconData = { 16: makeOnIcon(16), 32: makeOnIcon(32), 48: makeOnIcon(48) };
-  }
-  return onIconData;
-}
+const INACTIVE_ICON_PATHS = {
+  16: "icons/inactive16.png",
+  32: "icons/inactive32.png",
+  48: "icons/inactive48.png",
+  128: "icons/inactive128.png"
+};
 
 async function refreshIcon(tabId, enabled) {
   const icon = enabled
-    ? { tabId, imageData: onIcon() }
-    : // Passing the packaged paths for this tab resets it to the default look.
-      { tabId, path: DEFAULT_ICON_PATHS };
+    ? { tabId, path: ACTIVE_ICON_PATHS }
+    : { tabId, path: INACTIVE_ICON_PATHS };
+  
   const title = enabled
-    ? "WireDrafter: ON for this tab (click to turn off)"
-    : "WireDrafter: click to draft this tab";
+    ? "PageWire: ON for this tab (click to turn off)"
+    : "PageWire: click to draft this tab";
+    
   // Independent calls, so they overlap instead of serialising.
   await Promise.all([
     chrome.action.setIcon(icon).catch(() => {}),
@@ -165,7 +136,7 @@ async function signalBlocked(tabId) {
   try {
     await chrome.action.setTitle({
       tabId,
-      title: "WireDrafter can't run on this page (Chrome restricts it)"
+      title: "PageWire can't run on this page (Chrome restricts it)"
     });
     await chrome.action.setBadgeText({ tabId, text: "!" });
     await chrome.action.setBadgeBackgroundColor({ tabId, color: "#5f6368" });

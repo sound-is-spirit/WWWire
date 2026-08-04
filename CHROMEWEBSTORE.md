@@ -1,4 +1,4 @@
-# Chrome Web Store Listing: WebWire
+# Chrome Web Store Listing: PageWire
 
 > Last Updated: 2026-08-04
 >
@@ -9,13 +9,13 @@
 ## Store Listing
 
 **Extension Name** [REQUIRED]
-WebWire - Live Website Wireframes
+PageWire - Live Website Wireframes
 
 **Short Description** [REQUIRED]
 Turn any website into a lo-fi wireframe, then sketch on top of it with your own freehand drawings, containers, and text boxes.
 
 **Detailed Description** [REQUIRED]
-WebWire strips a live website down to its structure so you can see the layout instead of the design.
+PageWire strips a live website down to its structure so you can see the layout instead of the design.
 
 What it does:
 - Wireframe mode flattens the page to a high-contrast blueprint: white surfaces, black type, decoration removed, images and video collapsed to flat grey plates, and hand-drawn sketch outlines around the structural elements.
@@ -25,9 +25,9 @@ What it does:
 
 Useful for exploring how an existing page is put together, presenting a simplified layout to stakeholders, or sketching a change directly over the real thing before anyone opens a design tool.
 
-Note: WebWire adds and edits its own elements. It does not move or delete the website's own content. Everything is temporary and lives only in the tab you turned it on in; reloading the page restores it completely.
+Note: PageWire adds and edits its own elements. It does not move or delete the website's own content. Everything is temporary and lives only in the tab you turned it on in; reloading the page restores it completely.
 
-Privacy: WebWire runs entirely on your device. It makes no network requests of any kind, collects nothing, and does nothing at all until you click the icon on a specific tab.
+Privacy: PageWire runs entirely on your device. It makes no network requests of any kind, collects nothing, and does nothing at all until you click the icon on a specific tab.
 
 **Category** [REQUIRED]
 Developer Tools
