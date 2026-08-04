@@ -6,16 +6,32 @@ WireDrafter is a new product built on the engine of
 [GreyOut](https://github.com/sound-is-spirit/GreyOut). Versioning restarts at
 `0.1.0`; the GreyOut history (up to 2.2.0) lives in that repository.
 
-## [0.3.0] Wireframe, Edit Mode, and Popup
+## [0.3.0] Wireframe renderer and floating toolbar
 
 ### Added
-- **Structural layer:** Desaturate the page, flatten media to grey plates, and draw hand-drawn-looking outlines on structural elements.
-- **Node-selection heuristic:** Intelligent filtering (block-level, area threshold, aspect ratio) prevents outline noise.
-- **Edit mode:** Drag and drop elements anywhere on the page, delete arbitrary nodes, and undo (Cmd/Ctrl+Z) deletions and moves.
-- **Popup UI:** Fine-grained toggle controls for Wireframe, Greek text, Crisp outlines, and Edit mode instead of a single toolbar toggle.
+- **Wireframe renderer.** Flattens the page to white surfaces and black type,
+  strips decoration, collapses media to flat grey plates via `filter:
+  contrast(0)`, and draws hand-drawn sketch outlines using a `border-image`
+  built from an inline SVG rather than a per-element SVG filter.
+- **Node-selection pass.** A batched measurement pass picks which elements are
+  worth outlining, filtering by size floor, aspect ratio and duplicate-rectangle
+  suppression so the result reads as a wireframe rather than a debug overlay.
+- **Grey bars.** Text renders as bars sized and positioned to the measured text,
+  painted as a background gradient locked to line-height. No font is swapped, so
+  the page does not shift. Headings get a darker bar.
+- **Floating toolbar.** Wireframe and Grey bars checkboxes, plus buttons to add
+  draggable, natively resizable Containers and Text Boxes. Added elements delete
+  with a red × and text boxes edit in place with native `contenteditable`.
+- **Module architecture.** `content/engine.js` is generic plumbing (shadow
+  traversal, stylesheet mirroring, observer, node ownership, module registry);
+  `wireframe.js` and `toolbar.js` are feature modules that declare their own
+  flags and lifecycle. The engine never learns a feature's vocabulary.
 
-### Changed
-- The toolbar icon click no longer toggles the extension on/off directly. Use the popup, or the `Ctrl/Cmd+Shift+Y` keyboard command.
+### Notes
+- There is no popup. The toolbar icon and `Ctrl/Cmd+Shift+Y` toggle the tab
+  directly; per-mode controls live in the in-page floating panel.
+- Only elements you add can be moved or deleted. The extension does not edit the
+  host page's own elements.
 
 ## [0.2.0] Permission and state rework
 

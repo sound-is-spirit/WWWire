@@ -1,20 +1,34 @@
 # WireDrafter: implementation handoff
 
+> **HISTORICAL, superseded 2026-08-04.** This was written when the plan was to
+> build an edit mode that dragged and deleted the host page's own elements, plus
+> a browser-action popup. Both were built and then deliberately removed in
+> favour of a simpler design: a floating in-page toolbar that adds the user's
+> own containers and text boxes, which are the only things that move or delete.
+>
+> **Tasks 1 to 3 below are cancelled, not pending.** Do not build them.
+>
+> Sections that remain accurate and worth reading: the architecture, the module
+> contract, the invariants, the testing notes, and the tuning dials. See
+> `README.md` for what the extension actually does today.
+
 You are continuing work on a Chrome MV3 extension that is partly built. Read
 this whole file before writing code. It records decisions that were expensive to
 arrive at, several of which look wrong until you know why they are that way.
 
 ## The product
 
-WireDrafter turns any website into an **editable lo-fi wireframe**. Two halves:
+WireDrafter turns any website into a **lo-fi wireframe** you can sketch on top
+of. Two halves, both built:
 
-1. **Wireframe mode** (built). Strips colour and decoration, flattens media to
-   grey plates, draws hand-drawn-looking outlines on structural elements, and
-   greeks text into grey bars.
-2. **Edit mode** (not built). Drag any element on the page to a new position and
-   delete any element, with undo.
+1. **Wireframe mode.** Strips colour and decoration, flattens media to grey
+   plates, draws hand-drawn outlines on structural elements, and greeks text
+   into grey bars.
+2. **The toolbar.** Adds the user's own containers and text boxes on top. Those
+   are the only elements that move or delete; the host page's own content is
+   never edited.
 
-Repo: private, `sound-is-spirit/WireDrafter`. Current version `0.2.0`.
+Repo: private, `sound-is-spirit/WireDrafter`. Current version `0.3.0`.
 
 ## Current state
 
@@ -24,8 +38,9 @@ Repo: private, `sound-is-spirit/WireDrafter`. Current version `0.2.0`.
 | `background.js` | Done for one toggle. Per-tab state in `chrome.storage.session`, on-demand injection, per-tab icon, clears state on navigation. |
 | `content/engine.js` | Done. Shadow-DOM traversal, stylesheet mirroring, MutationObserver, module registry, state machine. |
 | `content/wireframe.js` | Done. Wireframe renderer plus greeked text. |
-| `content/edit.js` | **Not written.** Your main task. |
-| Popup | **Not written.** Your second task. |
+| `content/toolbar.js` | Done. Mode checkboxes and element spawners, top frame only. |
+| `content/edit.js` | Cancelled, see the banner. |
+| Popup | Cancelled, see the banner. |
 | Export | **Not written.** Stretch goal. |
 
 There is currently no UI for individual flags. A toolbar click sends
@@ -37,14 +52,13 @@ There is currently no UI for individual flags. A toolbar click sends
 background.js          Service worker. Owns per-tab state, injects content
                        files on demand, pushes state, drives the icon.
 content/engine.js      Generic plumbing. Knows nothing about any feature.
-content/wireframe.js   Feature module.
-content/edit.js        Feature module (you write this).
+content/wireframe.js   Feature module: the renderer.
+content/toolbar.js     Feature module: the UI. Top frame only.
 ```
 
-The worker injects `["content/engine.js", "content/wireframe.js", ...]` **in that
-order**. Feature modules return immediately if `window.__WD` is absent, so the
-engine must be first. Add `content/edit.js` to `CONTENT_FILES` in
-`background.js`.
+The worker injects `CONTENT_FILES` **in order**. Feature modules return
+immediately if `window.__WD` is absent, so the engine must be first. A new module
+is added to `CONTENT_FILES` in `background.js`.
 
 ### The module contract
 
@@ -53,9 +67,9 @@ registers itself and the engine derives everything else:
 
 ```js
 WD.register({
-  name: "edit",
-  flags: { edit: false },          // defaults, merged into the state shape
-  active: (s) => s.edit,           // "am I on?" the engine asks, never stores
+  name: "thing",
+  flags: { thing: false },         // defaults, merged into the state shape
+  active: (s, self) => s.thing,    // "am I on?" the engine asks, never stores
   css(state) { return "..."; },    // optional, concatenated while active
   mount(state) { },                // called on the off -> on edge
   update(state) { },               // called on every apply while active
@@ -64,7 +78,7 @@ WD.register({
 ```
 
 **Do not add your flags to `engine.js`.** If you find yourself editing the engine
-to teach it about edit mode, the design has been broken. That coupling was
+to teach it about your feature, the design has been broken. That coupling was
 removed deliberately; an earlier version hardcoded the state shape in three
 places that drifted out of sync.
 
@@ -75,7 +89,9 @@ places that drifted out of sync.
 | `WD.queryAll(sel)` | Query across light DOM **and every shadow root**, open or closed. Never returns extension-owned nodes. Use this, not `document.querySelectorAll`. |
 | `WD.roots()` | All roots (document + every shadow root), cached per apply. |
 | `WD.claim(el)` | Mark a node you created as extension-owned. |
-| `WD.isOwnNode(el)` | True for extension-owned nodes. **Edit mode must refuse to drag or delete these.** |
+| `WD.isOwnNode(el)` | True for extension-owned nodes and their subtrees. |
+| `WD.NOT_OWN` | The CSS counterpart, `:not([mark], [mark] *)`. Compose this into selectors; never spell the attribute out. |
+| `WD.anyActive(self)` | "Is any other module active." For chrome modules that have no flags of their own. |
 | `WD.onRescan(fn)` | Register a debounced callback fired on DOM churn and resize. |
 | `WD.invalidate()` | Request a rescan. |
 | `WD.state` | Current merged flag object. |
@@ -119,10 +135,23 @@ These are load-bearing. Each one was a real bug.
 8. **State is per tab, in `chrome.storage.session`**, never `storage.local`.
    Persisting "on" across a browser restart would relaunch into a state whose
    renderer no longer exists.
-9. **Injection must stay idempotent.** The worker injects unconditionally on
-   every toggle; each file guards with a `window.__WD*` flag.
+9. **Injection must stay idempotent.** The worker injects on the OFF to ON edge,
+   and every file guards with a `window.__WD*` flag. A module missing its guard
+   re-registers on each injection and mounts a duplicate of itself.
+10. **`WD.claim()` every node you create.** It keeps the renderer's universal
+    rule off your UI, keeps the tagging pass from treating your elements as page
+    structure, and covers children the browser generates inside them (pressing
+    Enter in a `contenteditable` makes fresh `<div>`s). Skipping it forces inline
+    `!important` and cross-module class-name checks, both of which were removed.
+11. **Chrome UI is per tab, renderers are per frame.** Content scripts inject
+    with `allFrames`, so anything that appends visible UI needs
+    `if (window.top !== window) return;` or every iframe builds its own.
 
-## Task 1: `content/edit.js`
+## Task 1 (CANCELLED): `content/edit.js`
+
+> Not built, and not to be built. Editing the host page's own elements was
+> replaced by adding your own. Kept for the pointer-handling notes, which apply
+> to any drag implementation.
 
 Drag and delete arbitrary page elements. Register as a module per the contract.
 
@@ -168,7 +197,11 @@ Drag and delete arbitrary page elements. Register as a module per the contract.
 clear the undo stack. Deletions and moves are intentionally *not* reverted on
 unmount, since that is the point of the tool, but say so in the README.
 
-## Task 2: the popup
+## Task 2 (CANCELLED): the popup
+
+> Not built. The mode toggles live in the in-page floating toolbar instead, so
+> the manifest has no `default_popup` and `chrome.action.onClicked` still
+> toggles the tab directly.
 
 `background.js` currently has no popup and toggles directly via
 `chrome.action.onClicked`. With more than one flag, add `default_popup` to the
@@ -183,7 +216,7 @@ manifest's `action` and move toggling into the popup.
   the worker to patch that tab's state.
 - Keep the keyboard command (`toggle-draft`, Ctrl/Cmd+Shift+Y) working.
 
-## Task 3 (stretch): export
+## Task 3 (still open): export
 
 PNG and SVG of the wireframed page. Note the current renderer restyles the live
 DOM in place rather than drawing to a canvas, so export needs either

@@ -1,118 +1,120 @@
 # WireDrafter
 
-A Manifest V3 Chrome extension that turns any website into an **editable lo-fi
-wireframe**. Strip the styling, sketch the structure, then move and delete
-anything on the page.
+A Manifest V3 Chrome extension that turns any website into a **lo-fi wireframe**,
+then lets you sketch on top of it. Strip the styling to see the structure, greek
+the copy, and drop in your own containers and text boxes.
 
-> **Status: v0.1.0, early.** Only the text layer is implemented today (see
-> [What works now](#what-works-now)). The structural and edit layers are
-> designed but not built. WireDrafter grew out of
-> [GreyOut](https://github.com/sound-is-spirit/GreyOut), a shipped
-> screen-sharing redaction tool, and inherits its rendering engine.
+> **Status: v0.3.0.** The wireframe renderer and the floating toolbar work.
+> WireDrafter grew out of [GreyOut](https://github.com/sound-is-spirit/GreyOut),
+> a shipped screen-sharing redaction tool, and inherits its shadow-DOM plumbing.
 
-## What works now
+## What it does
 
-**Text as bars.** A single universal `*` rule re-renders every glyph on the page
-in a solid-bar font, in flat grey. This is the text primitive of a lo-fi
-wireframe: real copy becomes grey bars with the exact width and line-wrap of the
-original, so **layout never shifts**. Icons and imagery stay visible.
+**Wireframe.** Flattens the page to a high-contrast blueprint: white surfaces,
+black type, decoration stripped, media collapsed to flat grey plates, and
+hand-drawn sketch outlines on structural elements. A measurement pass decides
+which elements are worth outlining, so the result reads as a wireframe rather
+than as a debug overlay.
 
-It works everywhere, including single-page apps that constantly re-render and
-text hidden inside encapsulated web-component **Shadow DOM** controls.
+**Grey bars.** Replaces text with grey bars sized to the real text, so you see
+rhythm and hierarchy without reading words. Bars are painted as a background
+gradient locked to each element's measured line-height, which touches no
+layout-affecting property, so **the page does not shift**. Headings get a darker
+bar so hierarchy survives.
 
-| Before | Text layer on |
+**Sketching.** A floating toolbar adds **Containers** and **Text Boxes** on top
+of the wireframe. Added elements drag with the pointer, resize natively from the
+bottom-right corner, delete with the red **×**, and text boxes edit in place with
+native `contenteditable`. Click to place, click again to type.
+
+All of it works on single-page apps that constantly re-render, and reaches text
+inside encapsulated web-component **Shadow DOM** controls, including closed ones.
+
+| Before | Wireframe |
 |:---:|:---:|
 | <img src="docs/example-normal.png" width="400"> | <img src="docs/example-redacted.png" width="400"> |
 
-## Roadmap
+## Usage
 
-The remaining layers, in build order. Design decisions behind these are recorded
-in the notes referenced below.
-
-1. ~~**Structural layer.**~~ **Done.** Desaturates the page and draws the wireframe boxes with hand-drawn-looking edges.
-2. ~~**Node-selection heuristic.**~~ **Done.** Intelligent filtering for outline generation.
-3. ~~**Edit mode.**~~ **Done.** Drag and delete arbitrary nodes. Undo stack plus Cmd+Z.
-4. **Export.** PNG and SVG out of the tagged boxes.
-5. ~~**Permission and state rework.**~~ **Done in v0.2.0.** See
-   [Permission model](#permission-model).
-
-## How the current engine works
-
-| Technique | What it does |
-| --- | --- |
-| **Universal `*` glyph substitution** | One unscoped rule re-renders every glyph as a solid bar. Nothing to enumerate, nothing missed; and because no `background` is set, bars can't stack into darker nested boxes. |
-| **Embedded bar font (WOFF2, ~10 KB)** | Glyphs become bars that keep the exact width and line-wrap of the original text, so there is **zero layout shift**. A Base64 `data:` URI means no network request and no FOUC. |
-| **`<style>` injection + Constructable Stylesheet** | The light DOM gets a reliable injected `<style>`; the same rules are also adopted into `document.adoptedStyleSheets`. Applying and removing is an O(1) CSSOM operation. |
-| **`chrome.dom.openOrClosedShadowRoot()`** | Reaches text inside encapsulated **Shadow DOM** controls (even `mode:"closed"`) from the **ISOLATED world**, with no host-page code injection and no prototype patching. A `<style>` is injected into each shadow root. |
+- Click the toolbar icon to draft the current tab, or press
+  **Ctrl/Cmd+Shift+Y**. Click again to restore the page.
+- The icon turns green while a tab is drafted. Tabs you have not touched keep
+  the plain icon.
+- The floating panel appears top-right with **Wireframe** and **Grey bars**
+  checkboxes, and buttons to add a Container or a Text Box.
 
 ## Permission model
 
 WireDrafter requests `storage`, `activeTab` and `scripting`. It does **not**
-request `<all_urls>`, and the content script is not declared in the manifest.
+request `<all_urls>`, and no content script is declared in the manifest.
 
 Nothing runs anywhere until you invoke the extension on a tab. Clicking the
-toolbar icon (or pressing the shortcut) grants `activeTab` for that one tab, and
-only then is the renderer injected, into that tab's frames only. Consequences,
-all deliberate:
+icon (or pressing the shortcut) grants `activeTab` for that one tab, and only
+then is the renderer injected, into that tab's frames only. Consequences, all
+deliberate:
 
 - The install prompt does not ask to "read and change all your data on all
   websites".
-- **State is per tab.** Drafting one tab leaves every other tab alone. Earlier
-  versions kept a single browser-wide flag, which was wrong for this tool.
+- **State is per tab.** Drafting one tab leaves every other tab alone.
 - **Draft mode does not survive a navigation or reload.** The injected renderer
   dies with the document, so the tab's state is cleared to match rather than
-  showing a stale ON icon.
+  showing a stale ON icon. Anything you added is lost with it.
 - State lives in `chrome.storage.session` (in-memory, gone when Chrome closes),
   not `chrome.storage.local`. Persisting "draft mode is on" across a restart
   would relaunch you into a state whose renderer no longer exists.
 
-## Usage
-
-- The toolbar icon is a **direct toggle** (no popup yet): click to draft the
-  current tab, click again to restore it. The icon turns green while a tab is
-  drafted; tabs you have not touched keep the plain icon.
-- Same toggle is bound to **Ctrl/Cmd+Shift+Y**.
-- The popup arrives with roadmap items 1 and 3, when there is more than one mode
-  worth switching.
-
 ## Architecture
 
-The worker owns all state; the content script is a renderer that does what it is
+The worker owns all state. Content modules are renderers that do what they are
 told.
 
 ```
 background.js          Service worker. Owns per-tab state in
-                       chrome.storage.session, injects the renderer on
-                       demand (chrome.scripting, allFrames), pushes state
-                       to it, drives the per-tab icon, and clears a tab on
-                       navigation or close. Touches no host-page code.
+                       chrome.storage.session, injects the content files on
+                       demand (chrome.scripting, allFrames), pushes state,
+                       drives the per-tab icon, clears a tab on navigation
+                       or close. Touches no host-page code.
 
-content_isolated.js    The renderer. ISOLATED world only, injected on
-                       demand rather than declared in the manifest.
-                       - Guards against re-injection, so the worker can
-                         inject unconditionally on every toggle.
-                       - Builds ONE stylesheet (embedded fonts + rules).
-                       - Light DOM: injects it as <style> (+ adoptedStyleSheets).
-                       - Shadow DOM: chrome.dom.openOrClosedShadowRoot() + a
-                         <style> per shadow root, nested roots included.
-                       - Holds no opinion about state; applies whatever the
-                         worker's last message said.
+content/engine.js      Generic plumbing, knows nothing about any feature.
+                       Shadow-DOM traversal (cached), stylesheet mirrored
+                       into every root, a MutationObserver, node ownership
+                       (WD.claim / WD.isOwnNode / WD.NOT_OWN), and a module
+                       registry driven by a state machine.
+
+content/wireframe.js   The renderer. Builds the wireframe CSS and runs the
+                       measurement pass that decides what to outline.
+
+content/toolbar.js     The UI. Mode checkboxes and element spawners. Top
+                       frame only.
 ```
 
-One `chrome.runtime` message carries the state, worker to frames. There is no
+Modules declare their own flags, their own `active(state)` predicate, and their
+own lifecycle edges at registration, so the engine never learns a feature's
+vocabulary and a new module lands without editing it.
+
+One `chrome.runtime` message carries state from worker to frames. There is no
 cross-frame `postMessage`, no cross-world messaging to intercept, and no shared
 storage key a second tab could read.
 
+## How the rendering works
+
+| Technique | What it does |
+| --- | --- |
+| **`filter: contrast(0)` on media** | The contrast filter is `C' = (C - 0.5) * amount + 0.5`, so at amount 0 every channel collapses to exactly 0.5. One GPU-accelerated declaration turns any image, video or canvas into a flat grey plate, with no per-image work. |
+| **`border-image` from an inline SVG** | Sketch outlines come from a data-URI SVG decoded once and reused everywhere, not from a per-element `feTurbulence`/`feDisplacementMap` filter, which would rasterise one filter region per element and stall the compositor. Four seeded variants stop it looking mechanical. |
+| **Background-gradient text bars** | Bars are a repeating gradient locked to measured line-height, sized and positioned to the measured text. No font is swapped, because no substitute font matches every glyph's advance width and a swap always reflows. |
+| **Batched read/write tagging pass** | All `getBoundingClientRect` and `getComputedStyle` reads happen before any class write, so the browser performs one layout instead of one per element. |
+| **`chrome.dom.openOrClosedShadowRoot()`** | Reaches into encapsulated **Shadow DOM** (even `mode:"closed"`) from the **ISOLATED world**, with no host-page injection and no prototype patching. |
+
 ## Privacy and data handling
 
-- **No data collection.** The extension stores one boolean per drafted tab in
-  `chrome.storage.session`, in memory, discarded when Chrome closes. Nothing
+- **No data collection.** The extension stores one small object per drafted tab
+  in `chrome.storage.session`, in memory, discarded when Chrome closes. Nothing
   else is read, stored, or transmitted.
-- **No network requests.** No `fetch`/XHR/WebSocket/beacon. The bar font is
-  embedded as a Base64 `data:` URI, so not even the font is downloaded.
+- **No network requests.** No `fetch`/XHR/WebSocket/beacon of any kind.
 - **No remote code.** All logic ships in the package (MV3 compliant).
 - **No host-page tampering.** Runs only in the extension's ISOLATED world; it
-  does not inject into the page's `MAIN` world or patch any native prototypes.
+  does not inject into the page's `MAIN` world or patch native prototypes.
 - **Permissions:** `storage`, `activeTab`, `scripting`. No `<all_urls>`, no
   `tabs`, no `cookies`, no `webRequest`.
 
@@ -123,40 +125,63 @@ storage key a second tab could read.
 3. **Load unpacked**, then select this folder.
 4. Open any page and click the toolbar icon (or **Ctrl/Cmd+Shift+Y**).
 
-## Customising
+## Tuning the wireframe
 
-Everything is driven by `buildCss()` in `content_isolated.js`:
+If a site comes out too sparse or too busy, these constants at the top of
+`content/wireframe.js` are the levers, not the algorithm:
 
-- **`ICON_KEEP`** lists selectors treated as icons/imagery, restored to an icon
-  font so they render as icons rather than bars. Add one if a glyph icon turns
-  into a bar; remove one if something you want barred is being spared.
-- The grey tone is `#bcbcbc`; the bar fonts are the `Draft Bar` and
-  `Draft Scribble` `@font-face` names.
+- `MIN_W`, `MIN_H`, `MIN_AREA`: size floors below which an element is not
+  outlined.
+- `MAX_ASPECT`: rejects rules, dividers and spacer strips, which are lines
+  pretending to be boxes.
+- `SKETCH_MIN`: below this an element gets a crisp hairline instead of the
+  `border-image`, which degenerates into corner ticks at small sizes.
+- `NEST_TOL`, `NEST_AREA_RATIO`: duplicate-box suppression, by pixel tolerance
+  and by area ratio respectively. The second is what catches padding-only
+  wrapper chains.
+- `MAX_BOXES`: pathological-page guard.
+- In `roughRectPath`: `j` (corner jitter) and `over` (corner overshoot, the
+  strongest hand-drawn tell).
 
 ## Scope and limitations
 
-- **Visual only.** The real values remain in the DOM and page memory. DevTools,
-  copy-paste and screen readers can still recover them. This is not a
+- **Visual only.** The real text remains in the DOM and page memory. DevTools,
+  copy-paste and screen readers can still recover it. This is not a
   data-security control.
 - **`<canvas>` / bitmap content is not reachable by CSS.** Text a page paints
-  into a `<canvas>` cannot be turned into bars. SVG `<text>` is covered; canvas
-  text is not.
+  into a `<canvas>` cannot be turned into bars. SVG `<text>` is covered.
 - **Restricted pages.** Content scripts cannot run on `chrome://` pages, the
   Chrome Web Store, or other extensions' pages. That is a Chrome policy; the
-  toolbar icon flashes a badge instead of silently doing nothing.
+  icon flashes a badge instead of silently doing nothing.
 - **Navigation ends the session.** Reloading or navigating a drafted tab clears
-  it. That is inherent to on-demand injection, and correct for a tool you point
-  at a page rather than leave running.
+  it, along with anything you added. Inherent to on-demand injection, and
+  correct for a tool you point at a page rather than leave running.
 - **Sub-frames that navigate on their own** while draft mode is on are not
-  picked up until the next toggle. The worker injects into all frames at toggle
-  time, but a frame that reloads afterwards comes back clean. The overlay
-  renderer in roadmap item 1 removes this class of problem.
+  re-drafted until the next toggle.
+- **No export yet.** Screenshot the page. See the roadmap.
 
-## Fonts
+## Roadmap
 
-`Redacted` and `Redacted Script` by Christian Naths, released under the SIL Open
-Font License, embedded as Base64 WOFF2 in `content_isolated.js` and re-exposed
-under the `Draft Bar` and `Draft Scribble` family names.
+- **Export.** PNG and SVG out of the tagged boxes.
+- **Persisting a session** across reload.
+- **More element types** in the toolbar (arrows, annotations).
+
+## Testing
+
+`test/suite.html` runs the module suite in a plain browser tab.
+`test/verify_cdp.py` drives the content scripts over the Chrome DevTools
+Protocol with the two `chrome.*` APIs stubbed, and covers the module contract,
+the re-injection guard, ownership of added content, and teardown.
+
+Note that Chrome 137 and later ignore `--load-extension`, so the packed
+extension cannot be loaded headlessly. The worker plumbing (`activeTab`
+granting, `executeScript` with `allFrames`, `storage.session`, the per-tab icon)
+is not covered by either harness and needs a manual load-unpacked pass.
+
+## Credits
+
+Shadow-DOM plumbing inherited from
+[GreyOut](https://github.com/sound-is-spirit/GreyOut).
 
 ## Licence
 

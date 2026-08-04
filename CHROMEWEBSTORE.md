@@ -1,6 +1,10 @@
-# Chrome Web Store Listing — WireDrafter
+# Chrome Web Store Listing: WireDrafter
 
 > Last Updated: 2026-08-04
+>
+> Everything here must describe the build actually being uploaded. Reviewers
+> check the listing against the package, and a listing that promises features
+> the ZIP does not contain, or names a file that is not in it, is a rejection.
 
 ## Store Listing
 
@@ -8,24 +12,27 @@
 WireDrafter
 
 **Short Description** [REQUIRED]
-Turn any website into an editable lo-fi wireframe. Strip the styling, sketch the structure, move and delete anything.
+Turn any website into a lo-fi wireframe, then sketch on top of it with your own containers and text boxes.
 
 **Detailed Description** [REQUIRED]
-WireDrafter turns any website into an editable lo-fi wireframe instantly.
-Features:
-- Toggle wireframe mode to strip complex CSS and reveal the underlying layout
-- Replace all text with generic "greek" text to focus on structure
-- Show crisp outlines of every block-level element
-- Edit mode lets you drag and drop, or delete any element on the page
-Whether you're exploring the structure of an existing site, presenting a simplified layout to stakeholders, or brainstorming layout changes directly in the browser, WireDrafter provides an unobtrusive, on-demand set of tools.
-Privacy: WireDrafter runs entirely locally. It does not track you, does not send data off your device, and only injects its tools into tabs when you explicitly click the icon or use the keyboard shortcut.
-For support or feedback, please visit our repository.
+WireDrafter strips a live website down to its structure so you can see the layout instead of the design.
+
+What it does:
+- Wireframe mode flattens the page to a high-contrast blueprint: white surfaces, black type, decoration removed, images and video collapsed to flat grey plates, and hand-drawn sketch outlines around the structural elements.
+- Grey bars replace the text with bars sized to the real copy, so you read rhythm and hierarchy instead of words. Headings stay heavier, so the hierarchy survives.
+- A floating toolbar lets you add your own containers and text boxes on top of the wireframe. Drag them, resize them from the corner, type into them, and delete them with the red x.
+
+Useful for exploring how an existing page is put together, presenting a simplified layout to stakeholders, or sketching a change directly over the real thing before anyone opens a design tool.
+
+Note: WireDrafter adds and edits its own elements. It does not move or delete the website's own content. Everything is temporary and lives only in the tab you turned it on in; reloading the page restores it completely.
+
+Privacy: WireDrafter runs entirely on your device. It makes no network requests of any kind, collects nothing, and does nothing at all until you click the icon on a specific tab.
 
 **Category** [REQUIRED]
 Developer Tools
 
 **Single Purpose** [REQUIRED]
-Converts live websites into interactive, editable wireframes by stripping styles and allowing elements to be moved or deleted.
+Renders a live web page as a lo-fi wireframe and lets the user sketch additional layout elements on top of it.
 
 **Primary Language** [REQUIRED]
 English
@@ -34,33 +41,35 @@ English
 
 | Asset | Dimensions | Status | Filename |
 |-------|-----------|--------|----------|
-| Store Icon [REQUIRED] | 128×128 PNG | ✅ Ready | icons/bar128.png |
-| Screenshot 1 [REQUIRED] | 1280×800 or 640×400 | ⬜ Not created | |
-| Screenshot 2 [RECOMMENDED] | 1280×800 or 640×400 | ⬜ Not created | |
-| Screenshot 3 [RECOMMENDED] | 1280×800 or 640×400 | ⬜ Not created | |
-| Screenshot 4 | 1280×800 or 640×400 | ⬜ Not created | |
-| Screenshot 5 | 1280×800 or 640×400 | ⬜ Not created | |
-| Small Promo Tile [RECOMMENDED] | 440×280 | ⬜ Not created | |
-| Marquee Promo Tile | 1400×560 | ⬜ Not created | |
+| Store Icon [REQUIRED] | 128x128 PNG | Ready | icons/bar128.png |
+| Screenshot 1 [REQUIRED] | 1280x800 or 640x400 | Not created | |
+| Screenshot 2 [RECOMMENDED] | 1280x800 or 640x400 | Not created | |
+| Screenshot 3 [RECOMMENDED] | 1280x800 or 640x400 | Not created | |
+| Small Promo Tile [RECOMMENDED] | 440x280 | Not created | |
+| Marquee Promo Tile | 1400x560 | Not created | |
 
 ### Screenshot Notes
-- Screenshot 1: Split view showing a complex website on the left and the wireframe version on the right.
-- Screenshot 2: Demonstration of the extension popup with toggles.
-- Screenshot 3: User moving an element with the "edit" outline visible.
+All three are buildable against the current build:
+- Screenshot 1: a content-heavy page before and after wireframe mode.
+- Screenshot 2: the floating toolbar panel, with Wireframe and Grey bars ticked.
+- Screenshot 3: an added Container and Text Box sitting on top of a wireframed page, with the delete button visible.
 
 ## Permissions Justification
 
 | Permission | Type | Justification |
 |------------|------|---------------|
-| storage | permissions | Required to temporarily save the ON/OFF state (wireframe/greek/crisp/edit modes) per tab during a browsing session using chrome.storage.session. |
-| activeTab | permissions | Required to inject the wireframing CSS and JS tools into the current tab only when the user explicitly clicks the extension action or uses the keyboard shortcut. |
-| scripting | permissions | Required to execute the content scripts (engine.js, wireframe.js, edit.js) that apply the visual transformations and enable drag-and-drop editing. |
+| storage | permissions | Stores which modes are on, per tab, for the current browsing session only, using chrome.storage.session. Nothing is written to disk and nothing persists after the browser closes. |
+| activeTab | permissions | Grants access to a single tab, only at the moment the user clicks the extension icon or presses the keyboard shortcut. The extension requests no host permissions and has no standing access to any site. |
+| scripting | permissions | Injects the content scripts (content/engine.js, content/wireframe.js, content/toolbar.js) that apply the wireframe styling and render the toolbar, into that one tab. |
 
 ## Privacy & Data Use
 
 ### Data Collection
 
 **Does the extension collect user data?** No
+
+The extension makes no network requests. There is no analytics, telemetry,
+tracking, or remote code of any kind.
 
 ### Data Use Certification
 - [x] Data is NOT sold to third parties
@@ -70,7 +79,7 @@ English
 ## Privacy Policy
 
 **Privacy Policy URL** [RECOMMENDED]
-(Host the PRIVACY.md on a public site)
+(Host PRIVACY.md at a public URL and paste it here)
 
 ## Distribution
 
@@ -96,13 +105,24 @@ English
 
 | Version | Date | Changes | Status |
 |---------|------|---------|--------|
-| 0.3.0 | 2026-08-04 | Added popup with configuration toggles, edit mode with move/delete support and undo stack. | Draft |
-| 0.2.0 | | Basic wireframe stripping and greek text rendering. | |
+| 0.3.0 | 2026-08-04 | Wireframe renderer with sketch outlines and grey text bars; floating toolbar for adding containers and text boxes. | Draft |
+| 0.2.0 | | Dropped `<all_urls>` for activeTab; per-tab state. Not published. | |
 
 ## Review Notes
 
+### Package contents
+`manifest.json`, `background.js`, `content/engine.js`, `content/wireframe.js`,
+`content/toolbar.js`, `icons/`. Docs, tests and the `test/` directory are not
+shipped.
+
 ### Known Issues / Limitations
-None known at this time.
+- Cannot run on `chrome://` pages, the Chrome Web Store, or other extensions'
+  pages, per Chrome policy. The icon flashes a badge rather than failing
+  silently.
+- Reloading or navigating a drafted tab clears the wireframe and anything the
+  user added. This is inherent to on-demand injection.
+- Sub-frames that navigate on their own are not re-drafted until the next
+  toggle.
 
 ### Rejection History
 N/A
