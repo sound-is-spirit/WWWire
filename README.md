@@ -1,11 +1,11 @@
-# WireDrafter
+# WWWire
 
 A Manifest V3 Chrome extension that turns any website into a **lo-fi wireframe**,
 then lets you sketch on top of it. Strip the styling to see the structure, greek
 the copy, and drop in your own containers and text boxes.
 
 > **Status: v0.3.0.** The wireframe renderer and the floating toolbar work.
-> WireDrafter grew out of [GreyOut](https://github.com/sound-is-spirit/GreyOut),
+> WWWire grew out of [GreyOut](https://github.com/sound-is-spirit/GreyOut),
 > a shipped screen-sharing redaction tool, and inherits its shadow-DOM plumbing.
 
 ## What it does
@@ -45,7 +45,7 @@ inside encapsulated web-component **Shadow DOM** controls, including closed ones
 
 ## Permission model
 
-WireDrafter requests `storage`, `activeTab` and `scripting`. It does **not**
+WWWire requests `storage`, `activeTab` and `scripting`. It does **not**
 request `<all_urls>`, and no content script is declared in the manifest.
 
 Nothing runs anywhere until you invoke the extension on a tab. Clicking the

@@ -2,7 +2,7 @@
 import json, sys, time
 from cdp import WS, http_json
 
-BASE = "/Users/vesa.metsa-ketela/Code/WireDrafter/content/"
+BASE = "/Users/vesa.metsa-ketela/Code/WWWire/content/"
 FILES = ["engine.js", "wireframe.js", "toolbar.js"]
 
 ws = WS(http_json(9333, "/json/version")["webSocketDebuggerUrl"])
@@ -39,7 +39,7 @@ window.chrome = {
   dom: { openOrClosedShadowRoot: el => window.__roots.get(el) || null }
 };
 window.__send = (state) =>
-  window.__msgs.forEach(f => f({ type: 'wiredrafter:setState', state }));
+  window.__msgs.forEach(f => f({ type: 'wwwire:setState', state }));
 'ok'""")
 
 src = {f: open(BASE + f).read() for f in FILES}
@@ -63,7 +63,7 @@ check("re-injection registers no extra modules", ev("window.__WD.modules.length"
 print("\n-- toolbar mount --")
 ev("window.__send({wireframe:true, greek:true}), 'on'")
 time.sleep(0.6)
-HOST = "body > div[data-wiredrafter]"
+HOST = "body > div[data-wwwire]"
 check("toolbar mounted via anyActive", ev(f"document.querySelectorAll('{HOST}').length") == 1,
       ev(f"document.querySelectorAll('{HOST}').length"))
 check("toolbar host is claimed", ev(f"window.__WD.isOwnNode(document.querySelector('{HOST}'))"))
@@ -110,8 +110,8 @@ check("contenteditable-generated child also protected",
         document.querySelector('#probe-added .wd-text-inner').appendChild(d);
         return window.__WD.isOwnNode(d);
       })()"""))
-css = ev("document.querySelector('style[data-wiredrafter]').textContent")
-check("media rule carries the ownership exclusion", "img:not([data-wiredrafter]" in css)
+css = ev("document.querySelector('style[data-wwwire]').textContent")
+check("media rule carries the ownership exclusion", "img:not([data-wwwire]" in css)
 check("small media render as light icons, not dark plates", ".wd-icon" in css)
 
 print("\n-- teardown --")
@@ -119,8 +119,8 @@ ev("document.getElementById('probe-added').remove(); 'rm'")
 ev("window.__send({wireframe:false, greek:false}), 'off'")
 time.sleep(0.5)
 check("toolbar unmounts", ev(f"document.querySelectorAll('{HOST}').length") == 0)
-check("no extension nodes left", ev("document.querySelectorAll('[data-wiredrafter]').length") == 0,
-      ev("document.querySelectorAll('[data-wiredrafter]').length"))
+check("no extension nodes left", ev("document.querySelectorAll('[data-wwwire]').length") == 0,
+      ev("document.querySelectorAll('[data-wwwire]').length"))
 
 print(f"\n{sum(results)}/{len(results)} passed")
 sys.exit(0 if all(results) else 1)

@@ -1,4 +1,4 @@
-// WireDrafter - wireframe renderer.
+// WWWire - wireframe renderer.
 //
 // Turns the page into a high-contrast lo-fi wireframe: flat white surfaces,
 // black type, original decoration stripped, media collapsed to solid grey, and

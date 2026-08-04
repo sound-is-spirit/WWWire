@@ -1,8 +1,8 @@
 # Changelog
 
-All notable changes to WireDrafter are documented here.
+All notable changes to WWWire are documented here.
 
-WireDrafter is a new product built on the engine of
+WWWire is a new product built on the engine of
 [GreyOut](https://github.com/sound-is-spirit/GreyOut). Versioning restarts at
 `0.1.0`; the GreyOut history (up to 2.2.0) lives in that repository.
 
@@ -114,7 +114,7 @@ Roadmap item 5. The extension no longer runs everywhere by default.
   keyed by tab id. Toggling a tab no longer flips every other tab and iframe.
   The old browser-wide `storage.local.enabled` key is deleted on update.
 - **The content script holds no state of its own.** It starts inert and applies
-  whatever the worker's last `wiredrafter:setState` message said, instead of
+  whatever the worker's last `wwwire:setState` message said, instead of
   reading storage and subscribing to `storage.onChanged`.
 - **Injection is idempotent.** A re-injection guard means the worker can inject
   unconditionally on every toggle without tracking live frames.
@@ -134,14 +134,14 @@ until the next toggle.
 ## [0.1.0] Forked from GreyOut
 
 ### Changed
-- **Renamed to WireDrafter** and reframed from a screen-sharing redaction tool
+- **Renamed to WWWire** and reframed from a screen-sharing redaction tool
   to a lo-fi wireframing tool. Version reset to `0.1.0`.
 - Font families renamed from `GreyOut Block` / `GreyOut Script` to
   **`Draft Bar`** / **`Draft Scribble`**. The underlying Redacted WOFF2 payloads
   are unchanged and deliberately retained: they are the wireframe text renderer,
   not dead weight.
-- Internal identifiers renamed: `greyout-style` to `wiredrafter-style`,
-  `data-greyout` to `data-wiredrafter`.
+- Internal identifiers renamed: `greyout-style` to `wwwire-style`,
+  `data-greyout` to `data-wwwire`.
 - Keyboard command renamed from `toggle-anonymizer` to `toggle-draft`. The
   default binding (`Ctrl/Cmd+Shift+Y`) is unchanged.
 

@@ -7,7 +7,7 @@ does cross the boundary, exactly as a user's mouse does.
 import json, sys, time
 from cdp import WS, http_json
 
-BASE = "/Users/vesa.metsa-ketela/Code/WireDrafter/content/"
+BASE = "/Users/vesa.metsa-ketela/Code/WWWire/content/"
 ws = WS(http_json(9333, "/json/version")["webSocketDebuggerUrl"])
 page = [t for t in ws.call("Target.getTargets", {"filter": [{}]})["targetInfos"]
         if t["type"] == "page" and "feed" in t["url"]][0]
@@ -62,7 +62,7 @@ window.chrome = {
   runtime: { onMessage: { addListener: f => window.__msgs.push(f) }, sendMessage: () => {} },
   dom: { openOrClosedShadowRoot: el => window.__roots.get(el) || null }
 };
-window.__send = st => window.__msgs.forEach(f => f({ type: 'wiredrafter:setState', state: st }));
+window.__send = st => window.__msgs.forEach(f => f({ type: 'wwwire:setState', state: st }));
 'ok'""")
 for f in ["engine.js", "wireframe.js", "toolbar.js"]:
     ev("(0,eval)(" + json.dumps(open(BASE + f).read()) + "), 'x'")

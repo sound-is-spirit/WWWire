@@ -1,8 +1,8 @@
-# Privacy Policy: WireDrafter
+# Privacy Policy: WWWire
 
 _Last updated: 3 August 2026_
 
-WireDrafter does **not** collect, store, transmit, or sell any personal or
+WWWire does **not** collect, store, transmit, or sell any personal or
 browsing data.
 
 ## What data the extension handles
@@ -34,4 +34,4 @@ wireframe. Nothing is captured or sent.
 ## Contact
 
 For privacy questions, open an issue at
-https://github.com/sound-is-spirit/WireDrafter/issues.
+https://github.com/sound-is-spirit/WWWire/issues.

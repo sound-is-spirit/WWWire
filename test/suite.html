@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>WireDrafter Tests</title>
+  <title>WWWire Tests</title>
 </head>
 <body>
   <div id="test-output">Running tests...</div>
@@ -64,7 +64,7 @@
     async function runTests() {
       // Helper to push state via mock
       function setState(state) {
-        msgs.forEach(fn => fn({ type: "wiredrafter:setState", state }));
+        msgs.forEach(fn => fn({ type: "wwwire:setState", state }));
       }
       
       const WD = window.__WD;
@@ -135,7 +135,7 @@
       setState({ wireframe: false, greek: false });
       await new Promise(r => setTimeout(r, 50));
       assert(!document.querySelector(".wd-toolbar"), "Toolbar unmounts with the renderers");
-      assert(document.querySelectorAll("[data-wiredrafter]").length === 0,
+      assert(document.querySelectorAll("[data-wwwire]").length === 0,
              "No extension nodes left behind");
 
       // Render results

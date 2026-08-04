@@ -16,7 +16,7 @@ period for a fix before any public disclosure.
 
 ## Security model: what this extension is (and is not)
 
-WireDrafter is a **visual rendering tool**. It re-renders a page as a lo-fi
+WWWire is a **visual rendering tool**. It re-renders a page as a lo-fi
 wireframe via CSS, currently by turning on-screen text into grey bars. People do
 use that as a screen-sharing privacy shield, so to be explicit: it is **not** a
 data-security control.

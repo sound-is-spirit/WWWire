@@ -1,4 +1,4 @@
-// WireDrafter - floating toolbar.
+// WWWire - floating toolbar.
 //
 // Mode checkboxes plus "add a Container / Text Box" spawners. Added elements
 // are draggable, natively resizable (`resize: both`), deletable, and edited
@@ -50,7 +50,7 @@
   let panel = null;  // the actual UI, inside the shadow root
 
   // --- Styles ---------------------------------------------------------------
-  // Scoped under [data-wiredrafter], which the engine stamps via WD.claim, so
+  // Scoped under [data-wwwire], which the engine stamps via WD.claim, so
   // these rules can never touch the host page.
 
   // Panel styling: goes inside the shadow root only, so nothing here can leak
@@ -612,7 +612,7 @@
       input.addEventListener("change", () => {
         try {
           chrome.runtime.sendMessage({
-            type: "wiredrafter:updateState",
+            type: "wwwire:updateState",
             state: { [t.id]: input.checked }
           });
         } catch (e) {

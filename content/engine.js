@@ -1,4 +1,4 @@
-// WireDrafter - engine (shared plumbing for every content module).
+// WWWire - engine (shared plumbing for every content module).
 //
 // Injected on demand by the service worker, ISOLATED world only. This file owns
 // what every mode needs and nothing mode-specific:
@@ -23,7 +23,7 @@
   // no-op, so the worker can inject unconditionally on every toggle.
   if (window.__WD) return;
 
-  const MARK = "data-wiredrafter";
+  const MARK = "data-wwwire";
 
   const WD = (window.__WD = {
     state: {},
@@ -353,7 +353,7 @@
   // frame answered, all but the first would race and log "channel closed".
   try {
     chrome.runtime.onMessage.addListener((msg) => {
-      if (!msg || msg.type !== "wiredrafter:setState") return;
+      if (!msg || msg.type !== "wwwire:setState") return;
       WD.apply(msg.state);
     });
   } catch (e) {

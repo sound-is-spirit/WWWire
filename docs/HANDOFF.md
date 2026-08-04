@@ -1,4 +1,4 @@
-# WireDrafter: implementation handoff
+# WWWire: implementation handoff
 
 > **HISTORICAL, superseded 2026-08-04.** This was written when the plan was to
 > build an edit mode that dragged and deleted the host page's own elements, plus
@@ -18,7 +18,7 @@ arrive at, several of which look wrong until you know why they are that way.
 
 ## The product
 
-WireDrafter turns any website into a **lo-fi wireframe** you can sketch on top
+WWWire turns any website into a **lo-fi wireframe** you can sketch on top
 of. Two halves, both built:
 
 1. **Wireframe mode.** Strips colour and decoration, flattens media to grey
@@ -28,7 +28,7 @@ of. Two halves, both built:
    are the only elements that move or delete; the host page's own content is
    never edited.
 
-Repo: private, `sound-is-spirit/WireDrafter`. Current version `0.3.0`.
+Repo: private, `sound-is-spirit/WWWire`. Current version `0.3.0`.
 
 ## Current state
 

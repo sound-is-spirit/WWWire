@@ -1,4 +1,4 @@
-// WireDrafter - background service worker (Manifest V3)
+// WWWire - background service worker (Manifest V3)
 //
 // Owns all state. The content script is a dumb renderer that does what this
 // worker tells it.
@@ -20,7 +20,7 @@
 // on" across a browser restart would be wrong: you would relaunch into a state
 // whose renderer no longer exists.
 
-const MSG_SET_STATE = "wiredrafter:setState";
+const MSG_SET_STATE = "wwwire:setState";
 const TAB_KEY_PREFIX = "tab:";
 
 const tabKey = (tabId) => TAB_KEY_PREFIX + tabId;
@@ -217,7 +217,7 @@ function serialize(tabId, fn) {
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (!msg || msg.type !== "wiredrafter:updateState") return;
+  if (!msg || msg.type !== "wwwire:updateState") return;
   // The sender's own tab id is authoritative; never trust a caller-supplied one.
   const tabId = sender.tab && sender.tab.id;
   if (tabId == null) return;
