@@ -28,9 +28,8 @@ All of it works on single-page apps that constantly re-render, and reaches text
 inside encapsulated web-component **Shadow DOM** controls, including closed ones.
 
 <p align="center">
-  <img src="docs/wireframe-demo.png" width="32%">
-  <img src="docs/wireframe-demo-2.png" width="32%">
-  <img src="docs/wireframe-demo-3.png" width="32%">
+  <img src="docs/demo-0.png" width="48%">
+  <img src="docs/demo-3.png" width="48%">
 </p>
 
 ## Usage
