@@ -151,6 +151,15 @@
   letter-spacing: normal !important;
   caret-color: transparent !important;
 }
+*${NOT_OWN}::before, *${NOT_OWN}::after {
+  color: ${INK} !important;
+  -webkit-text-fill-color: ${INK} !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border-color: ${INK} !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
 html, body { background: ${PAPER} !important; }
 
 /* Media collapses to a flat grey plate. contrast(0) maps every channel to
