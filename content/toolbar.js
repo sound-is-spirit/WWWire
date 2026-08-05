@@ -634,7 +634,11 @@
     const modes = el("section");
     modes.appendChild(heading("Modes"));
     for (const t of TOGGLES) {
-      const label = el("label");
+      const row = el("div");
+      row.style.display = "flex"; 
+      row.style.alignItems = "center"; 
+      row.style.gap = "8px"; 
+      row.style.marginBottom = "6px";
       const input = document.createElement("input");
       input.type = "checkbox";
       input.checked = !!state[t.id];
@@ -650,9 +654,13 @@
           /* worker asleep or context invalidated */
         }
       });
-      label.appendChild(input);
-      label.appendChild(el("span", null, t.label));
-      modes.appendChild(label);
+      row.appendChild(input);
+      const span = el("span", null, t.label);
+      span.style.pointerEvents = "none";
+      span.style.userSelect = "none";
+      span.style.webkitUserSelect = "none";
+      row.appendChild(span);
+      modes.appendChild(row);
     }
 
     const add = el("section");
