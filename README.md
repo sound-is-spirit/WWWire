@@ -27,9 +27,11 @@ native `contenteditable`. Click to place, click again to type.
 All of it works on single-page apps that constantly re-render, and reaches text
 inside encapsulated web-component **Shadow DOM** controls, including closed ones.
 
-| Example 1 | Example 2 | Example 3 |
-|:---:|:---:|:---:|
-| <img src="docs/wireframe-demo.png" width="280"> | <img src="docs/wireframe-demo-2.png" width="280"> | <img src="docs/wireframe-demo-3.png" width="280"> |
+<p align="center">
+  <img src="docs/wireframe-demo.png" width="32%">
+  <img src="docs/wireframe-demo-2.png" width="32%">
+  <img src="docs/wireframe-demo-3.png" width="32%">
+</p>
 
 ## Usage
 
