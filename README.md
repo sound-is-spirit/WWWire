@@ -1,8 +1,8 @@
 # WWWire
 
 A Manifest V3 Chrome extension that turns any website into a **lo-fi wireframe**,
-then lets you sketch on top of it. Strip the styling to see the structure, greek
-the copy, and drop in your own containers and text boxes.
+then lets you sketch on top of it. Strip the styling to see the structure, abstract
+the text, and drop in your own containers and text boxes.
 
 
 ## What it does
