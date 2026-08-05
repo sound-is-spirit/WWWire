@@ -75,7 +75,9 @@
   // The CSS counterpart of isOwnNode. The engine owns the marker name, so it
   // owns the escape hatch; modules compose this instead of spelling the
   // attribute out, which is how one rule block got missed.
-  WD.NOT_OWN = ":not([" + MARK + "], [" + MARK + "] *)";
+  // We artificially inflate specificity with :not(#x) so our !important rules
+  // beat the host page's !important ID selectors (preventing white-out bugs).
+  WD.NOT_OWN = ":not([" + MARK + "], [" + MARK + "] *):not(#wd1):not(#wd2):not(#wd3)";
 
   // --- Shadow DOM -----------------------------------------------------------
 

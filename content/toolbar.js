@@ -597,7 +597,7 @@
   // --- Panel ----------------------------------------------------------------
 
   const TOGGLES = [
-    { id: "wireframe", label: "Wireframe" },
+    { id: "wireframe", label: "Wireframes" },
     { id: "greek", label: "Grey bars" }
   ];
 
