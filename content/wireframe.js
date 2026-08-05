@@ -183,6 +183,7 @@ object${NOT_OWN}.${ICON}, embed${NOT_OWN}.${ICON} {
 input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
   background-color: ${PAPER} !important;
   color: ${INK} !important;
+  -webkit-text-fill-color: ${INK} !important;
   -webkit-appearance: none !important;
   appearance: none !important;
 }
