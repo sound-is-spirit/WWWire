@@ -120,7 +120,7 @@
     if (variantRules === null) {
       variantRules = SEEDS.map(
         (seed, i) =>
-          `.${BOX}.${VARIANT_CLASSES[i]}::before { border-image-source: ${sketchBorderImage(seed)} !important; }`
+          `.${BOX}.${VARIANT_CLASSES[i]}${NOT_OWN}::before { border-image-source: ${sketchBorderImage(seed)} !important; }`
       ).join("\n");
     }
     return variantRules;
@@ -202,13 +202,13 @@ input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
    touching it. There is deliberately no bare \`.${BOX} { position: relative }\`:
    at (0,1,0) specificity and last in source order it would beat a page rule
    like \`.card { position: absolute }\` and silently reflow the layout. */
-.${REL} { position: relative !important; }
+.${REL}${NOT_OWN} { position: relative !important; }
 `;
 
   const SKETCH_GEOMETRY = `
-.${BOX}.${THIN} { box-shadow: 0 0 0 1px ${INK} !important; }
-.${BOX}.${THIN}::before { content: none !important; }
-.${BOX}::before {
+.${BOX}.${THIN}${NOT_OWN} { box-shadow: 0 0 0 1px ${INK} !important; }
+.${BOX}.${THIN}${NOT_OWN}::before { content: none !important; }
+.${BOX}${NOT_OWN}::before {
   content: "" !important;
   position: absolute !important;
   inset: 0 !important;
@@ -234,7 +234,7 @@ input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
   // --wd-lh is the element's measured line-height, so bars sit on the real
   // lines instead of an assumed rhythm.
   const GREEK_CSS = `
-.${TEXT} {
+.${TEXT}${NOT_OWN} {
   /* Bar thickness tracks line-height but is capped: a 64px display heading
      scaled proportionally renders as a 30px slab, which reads as a filled
      block rather than as text. Clamped and centred in the line box instead,
@@ -269,7 +269,7 @@ input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
   background-clip: content-box !important;
 }
 /* Headings keep their weight so the page still has hierarchy once greeked. */
-.${TEXT}.${HEAD} { --wd-c: ${DARK}; }
+.${TEXT}.${HEAD}${NOT_OWN} { --wd-c: ${DARK}; }
 *${NOT_OWN}::placeholder { color: transparent !important; -webkit-text-fill-color: transparent !important; }
 *${NOT_OWN}::selection { background: transparent !important; color: transparent !important; }
 `;
