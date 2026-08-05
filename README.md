@@ -161,13 +161,8 @@ If a site comes out too sparse or too busy, these constants at the top of
   correct for a tool you point at a page rather than leave running.
 - **Sub-frames that navigate on their own** while draft mode is on are not
   re-drafted until the next toggle.
-- **No export yet.** Screenshot the page. See the roadmap.
+- **No export yet.** Screenshot the page.
 
-## Roadmap
-
-- **Export.** PNG and SVG out of the tagged boxes.
-- **Persisting a session** across reload.
-- **More element types** in the toolbar (arrows, annotations).
 
 ## Testing
 
