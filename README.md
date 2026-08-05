@@ -4,9 +4,6 @@ A Manifest V3 Chrome extension that turns any website into a **lo-fi wireframe**
 then lets you sketch on top of it. Strip the styling to see the structure, greek
 the copy, and drop in your own containers and text boxes.
 
-> **Status: v0.3.0.** The wireframe renderer and the floating toolbar work.
-> WWWire grew out of [GreyOut](https://github.com/sound-is-spirit/GreyOut),
-> a shipped screen-sharing redaction tool, and inherits its shadow-DOM plumbing.
 
 ## What it does
 
