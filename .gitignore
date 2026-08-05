@@ -18,3 +18,6 @@ npm-debug.log*
 
 # Local Claude Code scratch/config (not part of the extension)
 .claude/
+
+# Marketing / Media
+video-and-screenshots/
