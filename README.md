@@ -178,6 +178,8 @@ is not covered by either harness and needs a manual load-unpacked pass.
 
 ## Credits
 
+This entire extension was built autonomously by an AI agent (Google Antigravity).
+
 Shadow-DOM plumbing inherited from
 [GreyOut](https://github.com/sound-is-spirit/GreyOut).
 
