@@ -71,17 +71,17 @@ async function isTabEnabled(tabId) {
 // which the old global ON/OFF chip could not express once state went per-tab.
 
 const ACTIVE_ICON_PATHS = {
-  16: "icons/active16.png",
-  32: "icons/active32.png",
-  48: "icons/active48.png",
-  128: "icons/active128.png"
+  16: "icons/bar16-V2.png",
+  32: "icons/bar32-V2.png",
+  48: "icons/bar48-V2.png",
+  128: "icons/bar128-V2.png"
 };
 
 const INACTIVE_ICON_PATHS = {
-  16: "icons/inactive16.png",
-  32: "icons/inactive32.png",
-  48: "icons/inactive48.png",
-  128: "icons/inactive128.png"
+  16: "icons/bar16-V2.png",
+  32: "icons/bar32-V2.png",
+  48: "icons/bar48-V2.png",
+  128: "icons/bar128-V2.png"
 };
 
 async function refreshIcon(tabId, enabled) {
@@ -96,7 +96,9 @@ async function refreshIcon(tabId, enabled) {
   // Independent calls, so they overlap instead of serialising.
   await Promise.all([
     chrome.action.setIcon(icon).catch(() => {}),
-    chrome.action.setTitle({ tabId, title }).catch(() => {})
+    chrome.action.setTitle({ tabId, title }).catch(() => {}),
+    chrome.action.setBadgeText({ tabId, text: enabled ? "ON" : "" }).catch(() => {}),
+    chrome.action.setBadgeBackgroundColor({ tabId, color: "#4caf50" }).catch(() => {})
   ]);
 }
 
