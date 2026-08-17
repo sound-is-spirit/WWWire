@@ -71,10 +71,10 @@ async function isTabEnabled(tabId) {
 // which the old global ON/OFF chip could not express once state went per-tab.
 
 const ACTIVE_ICON_PATHS = {
-  16: "icons/bar16-V2.png",
-  32: "icons/bar32-V2.png",
-  48: "icons/bar48-V2.png",
-  128: "icons/bar128-V2.png"
+  16: "icons/bar16-active.png",
+  32: "icons/bar32-active.png",
+  48: "icons/bar48-active.png",
+  128: "icons/bar128-active.png"
 };
 
 const INACTIVE_ICON_PATHS = {
