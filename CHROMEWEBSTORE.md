@@ -1,6 +1,6 @@
 # Chrome Web Store Listing: WWWire
 
-> Last Updated: 2026-08-04
+> Last Updated: 2026-08-18
 >
 > Everything here must describe the build actually being uploaded. Reviewers
 > check the listing against the package, and a listing that promises features
@@ -106,7 +106,8 @@ tracking, or remote code of any kind.
 
 | Version | Date | Changes | Status |
 |---------|------|---------|--------|
-| 0.4.0 | 2026-08-04 | Added freehand drawing tool, copy/paste (Cmd+C/Cmd+V) keyboard shortcuts, and full Undo stack (Cmd+Z). | Draft |
+| 0.5.0 | 2026-08-18 | Redesigned toolbar UI with custom checkboxes, dynamic versioning, and updated extension icons. | Draft |
+| 0.4.0 | 2026-08-04 | Added freehand drawing tool, copy/paste (Cmd+C/Cmd+V) keyboard shortcuts, and full Undo stack (Cmd+Z). | Released |
 | 0.3.4 | 2026-08-04 | Wireframe renderer with sketch outlines and grey text bars; floating toolbar for adding containers and text boxes. | Unreleased |
 
 ## Review Notes

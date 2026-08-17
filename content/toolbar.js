@@ -58,38 +58,51 @@
   const PANEL_CSS = `
 .${PANEL} {
   position: fixed; top: 20px; right: 20px; z-index: 2147483647;
-  width: 150px; padding: 12px; box-sizing: border-box;
+  width: 220px; padding: 16px; box-sizing: border-box;
   display: flex; flex-direction: column; gap: 12px;
-  background: #fff; border: 2px solid #111; color: #111;
+  background: #f0f0f0; border: 2px dashed #111; border-radius: 8px; color: #111;
   font: 14px/1.4 system-ui, sans-serif;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  user-select: none; -webkit-user-select: none;
   /* Belt and braces: a host page cannot reach in here, but the shadow root
      inherits a few properties from the host element regardless. */
   -webkit-text-fill-color: #111;
 }
-.${PANEL} h2 { font-size: 14px; font-weight: 700; margin: 0 0 8px; }
+.${PANEL} h2 { font-size: 15px; font-weight: 700; margin: 0 0 8px; display: flex; align-items: center; }
+.${PANEL} .version { font-size: 11px; font-weight: 400; margin-left: 4px; color: #555; }
 .${PANEL} label {
   display: flex; align-items: center; gap: 8px;
-  margin-bottom: 6px; cursor: pointer;
+  margin-bottom: 8px; cursor: pointer; font-weight: 500; font-size: 13px;
 }
-.${PANEL} section + section { border-top: 1px solid #ddd; padding-top: 12px; }
-.${PANEL} .hint { font-weight: 400; font-size: 0.85em; color: #666; }
+.${PANEL} input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  width: 16px; height: 16px; border: 1.5px solid #111; border-radius: 3px;
+  background: #f0f0f0; cursor: pointer; margin: 0;
+  display: flex; justify-content: center; align-items: center;
+}
+.${PANEL} input[type="checkbox"]:checked { background: #111; }
+.${PANEL} input[type="checkbox"]:checked::after {
+  content: ''; width: 4px; height: 8px; border: solid #f0f0f0;
+  border-width: 0 2px 2px 0; transform: rotate(45deg); margin-top: -2px;
+}
+.${PANEL} section + section { border-top: 1px solid #ccc; padding-top: 12px; }
+.${PANEL} .hint { font-weight: 400; font-size: 0.85em; color: #555; display: block; margin-top: 2px; }
 .${BTN} {
-  display: block; width: 100%; padding: 6px;
-  -webkit-text-fill-color: #fff; margin-bottom: 6px;
-  background: #111; color: #fff; border: 1px solid #111;
-  font: 700 14px/1.2 system-ui, sans-serif; text-align: center; cursor: pointer;
+  display: flex; align-items: center; justify-content: flex-start; gap: 10px;
+  width: 100%; padding: 8px 12px; box-sizing: border-box;
+  -webkit-text-fill-color: #111; margin-bottom: 6px;
+  background: #f0f0f0; color: #111; border: 1.5px solid #111; border-radius: 4px;
+  font: 600 13px/1.2 system-ui, sans-serif; cursor: pointer;
 }
+.${BTN}:hover { background: #e4e4e4; }
+.${BTN}.dashed { border: 1.5px dashed #111; }
+.${BTN} svg { width: 16px; height: 16px; flex-shrink: 0; fill: none; stroke: #111; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .${BTN}:last-child { margin-bottom: 0; }
 .wd-drag-handle {
-  cursor: grab;
-  height: 12px;
-  background: repeating-linear-gradient(90deg, #ccc, #ccc 2px, transparent 2px, transparent 4px);
-  background-size: 24px 4px;
-  background-position: center;
-  background-repeat: no-repeat;
-  margin-bottom: 8px;
-  opacity: 0.8;
+  cursor: grab; display: inline-flex; margin-left: auto; color: #111; opacity: 0.7;
+  padding: 6px; margin-top: -6px; margin-right: -6px; margin-bottom: -6px; border-radius: 4px;
 }
+.wd-drag-handle:hover { opacity: 1; background: #e4e4e4; }
 .wd-drag-handle:active { cursor: grabbing; }
 `;
 
@@ -469,7 +482,10 @@
 
   function toggleDraw() {
     isDrawingMode = !isDrawingMode;
-    if (drawBtn) drawBtn.textContent = isDrawingMode ? "Stop Drawing" : "Draw (Freehand)";
+    if (drawBtn) {
+      const span = drawBtn.querySelector("span");
+      if (span) span.textContent = isDrawingMode ? "Stop Drawing" : "Draw (Freehand)";
+    }
     if (isDrawingMode) {
       if (drawOverlay) return;
       drawOverlay = WD.claim(document.createElement("div"));
@@ -620,13 +636,14 @@
 
   function heading(text, hint) {
     const h = el("h2", null, text);
-    if (hint) h.appendChild(el("span", "hint", " " + hint));
+    if (hint) h.appendChild(el("span", "hint", hint));
     return h;
   }
 
-  function button(label, onClick) {
-    const b = el("button", BTN, label);
-    b.addEventListener("click", onClick);
+  function button(label, iconSvg, customClass, onClick) {
+    const b = el("button", BTN + (customClass ? " " + customClass : ""));
+    b.innerHTML = iconSvg + `<span>${label}</span>`;
+    if (onClick) b.addEventListener("click", onClick);
     return b;
   }
 
@@ -641,7 +658,14 @@
 
     panel = el("div", PANEL);
 
+    const header = el("h2", null);
+    const titleWrap = el("span", null, "Wireframe Utility");
+    const extVersion = chrome.runtime.getManifest().version;
+    titleWrap.appendChild(el("span", "version", `v${extVersion}`));
+    header.appendChild(titleWrap);
+
     const handle = el("div", "wd-drag-handle");
+    handle.innerHTML = `<svg viewBox="0 0 24 24" style="pointer-events: none;"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>`;
     let left0 = 0, top0 = 0;
     onDrag(handle, {
       start() {
@@ -656,7 +680,8 @@
         panel.style.top = top0 + dy + "px";
       }
     });
-    panel.appendChild(handle);
+    header.appendChild(handle);
+    panel.appendChild(header);
 
     const modes = el("section");
     modes.appendChild(heading("Modes"));
@@ -682,20 +707,36 @@
         }
       });
       row.appendChild(input);
+      
+      // Update label clicking to toggle checkbox correctly
+      const label = el("label", null);
+      label.style.margin = "0";
+      label.style.display = "flex";
+      label.style.alignItems = "center";
+      label.style.gap = "8px";
+      label.appendChild(input);
+      
       const span = el("span", null, t.label);
       span.style.pointerEvents = "none";
       span.style.userSelect = "none";
       span.style.webkitUserSelect = "none";
-      row.appendChild(span);
+      label.appendChild(span);
+      
+      row.appendChild(label);
       modes.appendChild(row);
     }
 
     const add = el("section");
     add.appendChild(heading("Add Element", "(Click to add)"));
-    add.appendChild(button("Container", addContainer));
-    add.appendChild(button("Text Box", addTextBox));
     
-    drawBtn = button("Draw (Freehand)", toggleDraw);
+    const containerIcon = `<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="3 3"/><rect x="14" y="14" width="7" height="7" fill="#111" stroke="none"/><rect x="14" y="3" width="7" height="7" fill="#111" stroke="none"/><path d="M15.5 4.5l4 4M19.5 4.5l-4 4" stroke="#fff" stroke-dasharray="0" stroke-width="1.5"/></svg>`;
+    const textIcon = `<svg viewBox="0 0 24 24"><path d="M5 7h14M12 7v12M9 19h6M5 10V7M19 10V7"/></svg>`;
+    const drawIcon = `<svg viewBox="0 0 24 24"><path d="M4 12c4-4 6-4 8 0s6 4 8 0"/></svg>`;
+    
+    add.appendChild(button("Container", containerIcon, "dashed", addContainer));
+    add.appendChild(button("Text Box", textIcon, "", addTextBox));
+    
+    drawBtn = button("Draw (Freehand)", drawIcon, "", toggleDraw);
     add.appendChild(drawBtn);
 
     panel.appendChild(modes);
