@@ -80,7 +80,17 @@
   font: 700 14px/1.2 system-ui, sans-serif; text-align: center; cursor: pointer;
 }
 .${BTN}:last-child { margin-bottom: 0; }
-
+.wd-drag-handle {
+  cursor: grab;
+  height: 12px;
+  background: repeating-linear-gradient(90deg, #ccc, #ccc 2px, transparent 2px, transparent 4px);
+  background-size: 24px 4px;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin-bottom: 8px;
+  opacity: 0.8;
+}
+.wd-drag-handle:active { cursor: grabbing; }
 `;
 
   // Added-element styling: these live in the page's light DOM, so they go
@@ -630,6 +640,23 @@
     root.appendChild(sheet);
 
     panel = el("div", PANEL);
+
+    const handle = el("div", "wd-drag-handle");
+    let left0 = 0, top0 = 0;
+    onDrag(handle, {
+      start() {
+        const rect = panel.getBoundingClientRect();
+        left0 = rect.left;
+        top0 = rect.top;
+        panel.style.right = "auto";
+        panel.style.bottom = "auto";
+      },
+      move(dx, dy) {
+        panel.style.left = left0 + dx + "px";
+        panel.style.top = top0 + dy + "px";
+      }
+    });
+    panel.appendChild(handle);
 
     const modes = el("section");
     modes.appendChild(heading("Modes"));
