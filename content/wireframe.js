@@ -272,6 +272,10 @@ input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
 .${TEXT}.${HEAD}${NOT_OWN} { --wd-c: ${DARK}; }
 *${NOT_OWN}::placeholder { color: transparent !important; -webkit-text-fill-color: transparent !important; }
 *${NOT_OWN}::selection { background: transparent !important; color: transparent !important; }
+input${NOT_OWN}::-webkit-datetime-edit, input${NOT_OWN}::-webkit-datetime-edit-fields-wrapper, input${NOT_OWN}::-webkit-datetime-edit-text, input${NOT_OWN}::-webkit-datetime-edit-month-field, input${NOT_OWN}::-webkit-datetime-edit-day-field, input${NOT_OWN}::-webkit-datetime-edit-year-field {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
 `;
 
   // --- Tagging pass ---------------------------------------------------------
@@ -354,6 +358,9 @@ input${NOT_OWN}, select${NOT_OWN}, textarea${NOT_OWN}, button${NOT_OWN} {
   }
 
   function hasOwnText(el) {
+    if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
+      return true;
+    }
     for (const n of el.childNodes) {
       if (n.nodeType === 3 && n.nodeValue && n.nodeValue.trim().length > 1) return true;
     }
