@@ -96,9 +96,7 @@ async function refreshIcon(tabId, enabled) {
   // Independent calls, so they overlap instead of serialising.
   await Promise.all([
     chrome.action.setIcon(icon).catch(() => {}),
-    chrome.action.setTitle({ tabId, title }).catch(() => {}),
-    chrome.action.setBadgeText({ tabId, text: enabled ? "ON" : "" }).catch(() => {}),
-    chrome.action.setBadgeBackgroundColor({ tabId, color: "#4caf50" }).catch(() => {})
+    chrome.action.setTitle({ tabId, title }).catch(() => {})
   ]);
 }
 
