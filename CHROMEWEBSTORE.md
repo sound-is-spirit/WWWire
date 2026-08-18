@@ -15,19 +15,23 @@ WWWire - Live Website Wireframes
 Turn any website into a lo-fi wireframe, then sketch on top of it with your own freehand drawings, containers, and text boxes.
 
 **Detailed Description** [REQUIRED]
-WWWire strips a live website down to its structure so you can see the layout instead of the design.
+WWWire strips any live website down to its bare structure, instantly transforming it into a clean, lo-fi wireframe. See the layout instead of the design, and sketch your own ideas directly on top of the real page before anyone even opens a design tool.
 
-What it does:
-- Wireframe mode flattens the page to a high-contrast blueprint: white surfaces, black type, decoration removed, images and video collapsed to flat grey plates, and hand-drawn sketch outlines around the structural elements.
-- Grey bars replace the text with bars sized to the real copy, so you read rhythm and hierarchy instead of words. Headings stay heavier, so the hierarchy survives.
-- A floating toolbar lets you add your own containers, text boxes, and freehand drawings on top of the wireframe. 
-- Full keyboard support: Drag, resize, or delete elements with Backspace/Delete. Copy and paste them with Cmd+C/Cmd+V, and reverse any mistakes with the Cmd+Z Undo stack.
+Features:
+• Instant Wireframing: One click flattens the page into a high-contrast blueprint. Colors vanish, decorations are removed, and images collapse into flat grey placeholders with hand-drawn sketch outlines around structural elements.
+• Grey-out Typography: Toggle "Grey bars" to replace all text with bars sized perfectly to the real copy. Focus on visual rhythm and hierarchy without getting distracted by the words.
+• On-Page Sketching: A floating toolbar lets you draw freehand shapes, place structural containers, and add custom text boxes anywhere on the page.
+• Powerful Keyboard Controls: Drag, resize, and delete elements easily. Duplicate objects with standard Copy/Paste (Cmd+C/Cmd+V) and undo any mistakes with a full Undo stack (Cmd+Z).
 
-Useful for exploring how an existing page is put together, presenting a simplified layout to stakeholders, or sketching a change directly over the real thing before anyone opens a design tool.
+Use Cases:
+- Reverse-engineer how complex pages are built and structured.
+- Present simplified layouts to stakeholders to focus feedback on structure rather than visual design.
+- Quickly mock up layout changes or new elements directly over a live production site.
 
-Note: WWWire adds and edits its own elements. It does not move or delete the website's own content. Everything is temporary and lives only in the tab you turned it on in; reloading the page restores it completely.
+Privacy & Security:
+WWWire is 100% private and runs locally on your device. It makes zero network requests, collects absolutely no data, and only injects its scripts when you explicitly click the extension icon on a specific tab.
 
-Privacy: WWWire runs entirely on your device. It makes no network requests of any kind, collects nothing, and does nothing at all until you click the icon on a specific tab.
+Note: WWWire adds temporary elements over the page. It does not permanently modify or delete the website's original content. Reloading the page will completely restore it to normal.
 
 **Category** [REQUIRED]
 Developer Tools
@@ -43,9 +47,10 @@ English
 | Asset | Dimensions | Status | Filename |
 |-------|-----------|--------|----------|
 | Store Icon [REQUIRED] | 128x128 PNG | Ready | icons/bar128.png |
-| Screenshot 1 [REQUIRED] | 1280x800 or 640x400 | Not created | |
-| Screenshot 2 [RECOMMENDED] | 1280x800 or 640x400 | Not created | |
-| Screenshot 3 [RECOMMENDED] | 1280x800 or 640x400 | Not created | |
+| Screenshot 1 [REQUIRED] | 1280x800 | Ready | video-and-screenshots/store-1.png |
+| Screenshot 2 [RECOMMENDED] | 1280x800 | Ready | video-and-screenshots/store-2.png |
+| Screenshot 3 [RECOMMENDED] | 1280x800 | Ready | video-and-screenshots/store-3.png |
+| Screenshot 4 [RECOMMENDED] | 1280x800 | Ready | video-and-screenshots/store-4.png |
 | Small Promo Tile [RECOMMENDED] | 440x280 | Not created | |
 | Marquee Promo Tile | 1400x560 | Not created | |
 
@@ -106,7 +111,8 @@ tracking, or remote code of any kind.
 
 | Version | Date | Changes | Status |
 |---------|------|---------|--------|
-| 0.5.0 | 2026-08-18 | Redesigned toolbar UI with custom checkboxes, dynamic versioning, and updated extension icons. | Draft |
+| 0.6.0 | 2026-08-18 | Redesigned toolbar with full-width drag handle and close button; improved YouTube promo videos and high-res store screenshots. | Draft |
+| 0.5.0 | 2026-08-18 | Custom checkboxes, dynamic versioning, and updated extension icons. | Released |
 | 0.4.0 | 2026-08-04 | Added freehand drawing tool, copy/paste (Cmd+C/Cmd+V) keyboard shortcuts, and full Undo stack (Cmd+Z). | Released |
 | 0.3.4 | 2026-08-04 | Wireframe renderer with sketch outlines and grey text bars; floating toolbar for adding containers and text boxes. | Unreleased |
 

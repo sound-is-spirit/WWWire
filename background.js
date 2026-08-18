@@ -29,7 +29,7 @@ const tabKey = (tabId) => TAB_KEY_PREFIX + tabId;
 // `{}`: the engine fills every registered module's declared default (all false)
 // via WD.apply, so the worker needs no vocabulary for it and a new module lands
 // without editing this file.
-const ON_STATE = { wireframe: true, greek: true };
+const ON_STATE = { wireframe: true, greek: true, toolbar: true };
 const OFF_STATE = {};
 
 // Derived, not enumerated, so this keeps working when a module adds a flag.
@@ -157,7 +157,20 @@ async function applyTabState(tabId, stateObj) {
 }
 
 async function toggleTab(tabId) {
-  const next = (await isTabEnabled(tabId)) ? OFF_STATE : ON_STATE;
+  const currentState = await getTabState(tabId);
+  const isEnabled = isOn(currentState);
+  
+  let next;
+  if (isEnabled) {
+    if (currentState.toolbar === false) {
+      next = Object.assign({}, currentState, { toolbar: true });
+    } else {
+      next = OFF_STATE;
+    }
+  } else {
+    next = ON_STATE;
+  }
+  
   try {
     await pushState(tabId, next);
   } catch (e) {

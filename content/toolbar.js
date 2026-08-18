@@ -98,12 +98,21 @@
 .${BTN}.dashed { border: 1.5px dashed #111; }
 .${BTN} svg { width: 16px; height: 16px; flex-shrink: 0; fill: none; stroke: #111; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .${BTN}:last-child { margin-bottom: 0; }
-.wd-drag-handle {
-  cursor: grab; display: inline-flex; margin-left: auto; color: #111; opacity: 0.7;
-  padding: 6px; margin-top: -6px; margin-right: -6px; margin-bottom: -6px; border-radius: 4px;
+.wd-drag-area {
+  cursor: grab; height: 20px; margin: -16px -16px 12px -16px;
+  display: flex; justify-content: center; align-items: center;
+  background: rgba(0,0,0,0.05); border-bottom: 1px solid rgba(0,0,0,0.1);
+  border-radius: 6px 6px 0 0;
+  font-size: 11px; color: #555; font-weight: 500;
 }
-.wd-drag-handle:hover { opacity: 1; background: #e4e4e4; }
-.wd-drag-handle:active { cursor: grabbing; }
+.wd-drag-area:hover { background: rgba(0,0,0,0.08); color: #111; }
+.wd-drag-area:active { cursor: grabbing; }
+.wd-close-btn {
+  position: absolute; top: 0px; right: 4px; width: 20px; height: 20px;
+  display: flex; justify-content: center; align-items: center;
+  cursor: pointer; opacity: 0.5; font-size: 18px; font-weight: bold; line-height: 1; z-index: 2;
+}
+.wd-close-btn:hover { opacity: 1; color: #d00; }
 `;
 
   // Added-element styling: these live in the page's light DOM, so they go
@@ -658,20 +667,35 @@
 
     panel = el("div", PANEL);
 
+    const dragArea = el("div", "wd-drag-area", "(Click to move)");
+    panel.appendChild(dragArea);
+
+    const closeBtn = el("div", "wd-close-btn", "×");
+    closeBtn.addEventListener("click", () => {
+      try {
+        chrome.runtime.sendMessage({
+          type: "wwwire:updateState",
+          state: { toolbar: false }
+        });
+      } catch (e) {}
+    });
+    panel.appendChild(closeBtn);
+
     const header = el("h2", null);
     const titleWrap = el("span", null, "Wireframe Utility");
     const extVersion = chrome.runtime.getManifest().version;
     titleWrap.appendChild(el("span", "version", `v${extVersion}`));
     header.appendChild(titleWrap);
+    panel.appendChild(header);
 
-    const handle = el("div", "wd-drag-handle");
-    handle.innerHTML = `<svg viewBox="0 0 24 24" style="pointer-events: none;"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>`;
     let left0 = 0, top0 = 0;
-    onDrag(handle, {
+    onDrag(dragArea, {
       start() {
         const rect = panel.getBoundingClientRect();
         left0 = rect.left;
         top0 = rect.top;
+        panel.style.left = left0 + "px";
+        panel.style.top = top0 + "px";
         panel.style.right = "auto";
         panel.style.bottom = "auto";
       },
@@ -680,8 +704,6 @@
         panel.style.top = top0 + dy + "px";
       }
     });
-    header.appendChild(handle);
-    panel.appendChild(header);
 
     const modes = el("section");
     modes.appendChild(heading("Modes"));
@@ -747,6 +769,11 @@
 
   function updateUI(state) {
     if (!panel) return;
+    if (state.toolbar === false) {
+      panel.style.display = "none";
+    } else {
+      panel.style.display = "";
+    }
     panel.querySelectorAll("input[data-wd-flag]").forEach((i) => {
       i.checked = !!state[i.dataset.wdFlag];
     });
